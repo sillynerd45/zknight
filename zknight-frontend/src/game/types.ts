@@ -43,4 +43,5 @@ export interface GameState {
   turnCount: number;
   gameStatus: GameStatus;
   startTime: number | null;
+  stateHistory: Map<string, number>;
 }

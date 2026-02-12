@@ -6,7 +6,8 @@
       "Bash(npx tsc:*)",
       "Bash(./node_modules/.bin/tsc:*)",
       "Bash(timeout 10 bun run dev:*)",
-      "Bash(bun remove:*)"
+      "Bash(bun remove:*)",
+      "Bash(bun run test:*)"
     ]
   }
 }
