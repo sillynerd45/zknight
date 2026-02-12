@@ -1,0 +1,33 @@
+/* ZKnight game-specific global styles */
+
+:root {
+  --tile-size: 64px;
+  --play-grid-w: 11;
+  --play-grid-h: 7;
+  --bg-grid-w: 15;
+  --bg-grid-h: 11;
+  --base-width: 1280px;
+  --base-height: 720px;
+
+  /* Game colors */
+  --color-water: #1a3a5c;
+  --color-grass: #4a7c3f;
+  --color-wall: #6b5b3e;
+  --color-goal: #ffd700;
+  --color-danger: #cc3333;
+  --color-knight-a: #4488cc;
+  --color-knight-b: #cc4444;
+  --color-explosion: #ff6600;
+  --color-overlay-bg: rgba(0, 0, 0, 0.7);
+
+  /* Move counter urgency */
+  --color-moves-normal: #888;
+  --color-moves-warning: #cc9900;
+  --color-moves-danger: #cc3333;
+}
+
+/* Game canvas resets */
+.game-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
