@@ -1,3 +1,5 @@
+import type {Puzzle} from '@/game/types';
+import {PUZZLES} from '@/puzzles';
 import type {EditorTool, PuzzleMetadata} from './types';
 import {WallAssetPicker} from './WallAssetPicker';
 import styles from './editorStyles.module.css';
@@ -14,6 +16,7 @@ interface PuzzleEditorToolbarProps {
     onClearBarrelPath: (index: 0 | 1) => void;
     onPlaytest: () => void;
     onExport: () => void;
+    onLoadPuzzle: (puzzle: Puzzle) => void;
 }
 
 const TOOLS: {key: EditorTool; label: string}[] = [
@@ -38,6 +41,7 @@ export function PuzzleEditorToolbar({
     onClearBarrelPath,
     onPlaytest,
     onExport,
+    onLoadPuzzle,
 }: PuzzleEditorToolbarProps) {
     const handleClearGrid = () => {
         if (confirm('Clear the entire grid?')) onClearGrid();
@@ -66,6 +70,27 @@ export function PuzzleEditorToolbar({
                     </button>
                 ))}
             </div>
+
+            {/* Load puzzle */}
+            <p className={styles.sectionLabel}>Load Puzzle</p>
+            <select
+                className={styles.textInput}
+                defaultValue=""
+                onChange={e => {
+                    const puzzle = PUZZLES.find(p => p.id === e.target.value);
+                    if (puzzle) {
+                        onLoadPuzzle(puzzle);
+                        e.target.value = '';
+                    }
+                }}
+            >
+                <option value="" disabled>Select a puzzle...</option>
+                {PUZZLES.map(p => (
+                    <option key={p.id} value={p.id}>
+                        {p.name} ({p.id})
+                    </option>
+                ))}
+            </select>
 
             {/* Wall asset picker */}
             {activeTool === 'wall' && (

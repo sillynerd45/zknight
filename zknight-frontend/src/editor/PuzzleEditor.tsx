@@ -22,6 +22,7 @@ export function PuzzleEditor({onBack}: PuzzleEditorProps) {
         clearBarrelPath,
         updateMetadata,
         togglePlaytest,
+        loadPuzzle,
     } = usePuzzleEditorState();
 
     const [showExportModal, setShowExportModal] = useState(false);
@@ -85,6 +86,7 @@ export function PuzzleEditor({onBack}: PuzzleEditorProps) {
                 onClearBarrelPath={clearBarrelPath}
                 onPlaytest={handlePlaytest}
                 onExport={handleExport}
+                onLoadPuzzle={loadPuzzle}
             />
 
             {showExportModal && (

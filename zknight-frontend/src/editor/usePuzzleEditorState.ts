@@ -1,5 +1,5 @@
 import {useState, useCallback} from 'react';
-import type {Position} from '@/game/types';
+import type {Position, Puzzle} from '@/game/types';
 import {PLAY_GRID_W, PLAY_GRID_H} from '@/game/constants';
 import {ROCK_ASSETS} from '@/sprites/staticAssets';
 import type {EditorCell, EditorTool, PuzzleMetadata, PuzzleEditorState} from './types';
@@ -153,6 +153,40 @@ export function usePuzzleEditorState() {
         setIsPlaytesting(prev => !prev);
     }, []);
 
+    const loadPuzzle = useCallback((puzzle: Puzzle) => {
+        // Build grid from puzzle data
+        const newGrid = createEmptyGrid();
+        for (const wall of puzzle.walls) {
+            const rockIdx = (wall.x * 7 + wall.y * 13) % ROCK_ASSETS.length;
+            newGrid[wall.y][wall.x] = {type: 'wall', wallAsset: ROCK_ASSETS[rockIdx]};
+        }
+        for (const tnt of puzzle.staticTNT) {
+            newGrid[tnt.y][tnt.x] = {type: 'staticTNT', wallAsset: null};
+        }
+        setGrid(newGrid);
+
+        // Set knight positions
+        setKnightA(puzzle.knightA);
+        setKnightB(puzzle.knightB);
+
+        // Extract barrel paths
+        const paths: [Position[], Position[]] = [[], []];
+        puzzle.movingTNT.forEach((barrel, i) => {
+            if (i < 2) paths[i] = [...barrel.path];
+        });
+        setBarrelPaths(paths);
+
+        // Set metadata
+        setMetadata({
+            id: puzzle.id,
+            name: puzzle.name,
+            minMoves: null,
+            maxMoves: null,
+        });
+
+        setIsPlaytesting(false);
+    }, []);
+
     const state: PuzzleEditorState = {
         grid,
         knightA,
@@ -173,5 +207,6 @@ export function usePuzzleEditorState() {
         clearBarrelPath,
         updateMetadata,
         togglePlaytest,
+        loadPuzzle,
     };
 }
