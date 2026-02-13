@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScaledContainer } from '@/components/ScaledContainer';
+import { SpriteTestPage } from '@/components/SpriteTestPage';
 
 type GameView = 'lobby' | 'game' | 'editor';
 
@@ -70,31 +71,25 @@ export function ZknightGame() {
     case 'editor':
       return (
         <ScaledContainer>
-          <div
+          <SpriteTestPage />
+          <button
+            onClick={() => setView('lobby')}
             style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#2a2a2a',
-              color: '#fff',
-              fontFamily: 'var(--font-body)',
+              position: 'fixed',
+              top: 8,
+              right: 8,
+              zIndex: 9999,
+              background: '#fff',
+              color: '#000',
+              border: 'none',
+              padding: '4px 12px',
+              cursor: 'pointer',
+              fontFamily: 'monospace',
+              fontSize: 12,
             }}
           >
-            <div style={{ textAlign: 'center' }}>
-              <h2>Puzzle Editor</h2>
-              <p style={{ opacity: 0.7, marginTop: '0.5rem' }}>
-                Editor will be implemented in a later step.
-              </p>
-              <button
-                onClick={() => setView('lobby')}
-                style={{ marginTop: '1rem', background: '#fff', color: '#2a2a2a' }}
-              >
-                Back to Lobby
-              </button>
-            </div>
-          </div>
+            Back to Lobby
+          </button>
         </ScaledContainer>
       );
   }
