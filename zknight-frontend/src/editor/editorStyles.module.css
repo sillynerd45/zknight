@@ -1,0 +1,341 @@
+/* ── Right Sidebar ─────────────────────────────────────────────── */
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 260px;
+    height: 100vh;
+    background: rgba(15, 15, 25, 0.92);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.sectionLabel {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin: 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Tool Buttons ─────────────────────────────────────────────── */
+
+.toolGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.toolButton {
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #aaa;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 11px;
+    transition: background 0.1s, border-color 0.1s;
+}
+
+.toolButton:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ddd;
+}
+
+.toolButtonActive {
+    composes: toolButton;
+    background: rgba(68, 136, 204, 0.25);
+    border-color: #4488cc;
+    color: #fff;
+}
+
+/* ── Action Buttons ───────────────────────────────────────────── */
+
+.actionButton {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: #ccc;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 11px;
+    width: 100%;
+    text-align: center;
+    transition: background 0.1s;
+}
+
+.actionButton:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.dangerButton {
+    composes: actionButton;
+    border-color: rgba(204, 51, 51, 0.4);
+    color: #cc6666;
+}
+
+.dangerButton:hover {
+    background: rgba(204, 51, 51, 0.2);
+    color: #ff6666;
+}
+
+.primaryButton {
+    composes: actionButton;
+    background: rgba(68, 136, 204, 0.2);
+    border-color: rgba(68, 136, 204, 0.4);
+    color: #88bbee;
+}
+
+.primaryButton:hover {
+    background: rgba(68, 136, 204, 0.35);
+    color: #aaddff;
+}
+
+/* ── Back / Nav Button ────────────────────────────────────────── */
+
+.backButton {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    border: none;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 3px;
+}
+
+.backButton:hover {
+    background: #fff;
+}
+
+/* ── Export Panel ──────────────────────────────────────────────── */
+
+.exportPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.exportTextarea {
+    width: 100%;
+    min-height: 180px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #aaffaa;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 8px;
+    resize: vertical;
+}
+
+/* ── Metadata Inputs ──────────────────────────────────────────── */
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inputLabel {
+    font-size: 10px;
+    color: #888;
+}
+
+.textInput {
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    color: #ddd;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.numberInput {
+    composes: textInput;
+    width: 80px;
+}
+
+/* ── Grid Overlays ────────────────────────────────────────────── */
+
+.gridCell {
+    position: absolute;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.gridCell:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.gridCellInvalid:hover {
+    background: rgba(204, 51, 51, 0.2);
+    cursor: not-allowed;
+}
+
+/* ── Info Text ────────────────────────────────────────────────── */
+
+.infoText {
+    font-size: 11px;
+    color: #888;
+}
+
+.countBadge {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    font-size: 11px;
+    color: #aaa;
+}
+
+/* ── Asset Picker ─────────────────────────────────────────────── */
+
+.assetGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.decoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.assetThumb {
+    width: 48px;
+    height: 48px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    image-rendering: pixelated;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.assetThumb:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.assetThumbActive {
+    composes: assetThumb;
+    border-color: #4488cc;
+    background-color: rgba(68, 136, 204, 0.15);
+}
+
+/* ── Modal ────────────────────────────────────────────────────── */
+
+.modalBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modalContent {
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    font-family: monospace;
+    color: #ccc;
+}
+
+.modalTitle {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 12px;
+}
+
+.modalError {
+    color: #ff6666;
+    font-size: 11px;
+    padding: 4px 0;
+}
+
+/* ── Selector Page ────────────────────────────────────────────── */
+
+.selectorContainer {
+    padding: 3rem;
+    font-family: monospace;
+    color: #ccc;
+    max-width: 600px;
+}
+
+.selectorTitle {
+    font-size: 20px;
+    color: #fff;
+    margin: 0 0 8px;
+}
+
+.selectorSubtitle {
+    font-size: 12px;
+    color: #666;
+    margin: 0 0 24px;
+}
+
+.selectorCards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.selectorCard {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left;
+}
+
+.selectorCard:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.selectorCardTitle {
+    font-size: 14px;
+    color: #fff;
+    margin: 0 0 4px;
+}
+
+.selectorCardDesc {
+    font-size: 11px;
+    color: #888;
+    margin: 0;
+}

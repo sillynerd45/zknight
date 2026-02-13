@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ScaledContainer } from '@/components/ScaledContainer';
-import { SpriteTestPage } from '@/components/SpriteTestPage';
 import { GameScene } from '@/components/GameScene';
 import { GameProvider, useGameContext } from '@/context/GameContext';
 import { useKeyboardInput } from '@/hooks/useKeyboardInput';
@@ -8,6 +7,7 @@ import { MoveCounter } from '@/components/MoveCounter';
 import { RaceTimer } from '@/components/RaceTimer';
 import { WinOverlay, ExplosionOverlay, CycleNotice } from '@/components/GameOverlays';
 import puzzle01 from '@/puzzles/puzzle_01';
+import { EditorSelector, BackgroundEditor, PuzzleEditor } from '@/editor';
 
 type GameView = 'lobby' | 'game' | 'editor';
 
@@ -87,6 +87,12 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
 
 export function ZknightGame() {
   const [view, setView] = useState<GameView>('lobby');
+  const [editorSubView, setEditorSubView] = useState<'background' | 'puzzle' | null>(null);
+
+  const handleLeaveEditor = useCallback(() => {
+    setEditorSubView(null);
+    setView('lobby');
+  }, []);
 
   switch (view) {
     case 'lobby':
@@ -102,10 +108,10 @@ export function ZknightGame() {
             </button>
             {import.meta.env.DEV && (
               <button
-                onClick={() => setView('editor')}
+                onClick={() => { setEditorSubView(null); setView('editor'); }}
                 style={{ background: '#666', color: '#fff', border: '1px solid #444' }}
               >
-                Puzzle Editor
+                Dev Editors
               </button>
             )}
           </div>
@@ -120,28 +126,17 @@ export function ZknightGame() {
       );
 
     case 'editor':
+      if (editorSubView === 'background') {
+        return <BackgroundEditor onBack={() => setEditorSubView(null)} />;
+      }
+      if (editorSubView === 'puzzle') {
+        return <PuzzleEditor onBack={() => setEditorSubView(null)} />;
+      }
       return (
-        <ScaledContainer>
-          <SpriteTestPage />
-          <button
-            onClick={() => setView('lobby')}
-            style={{
-              position: 'fixed',
-              top: 8,
-              right: 8,
-              zIndex: 9999,
-              background: '#fff',
-              color: '#000',
-              border: 'none',
-              padding: '4px 12px',
-              cursor: 'pointer',
-              fontFamily: 'monospace',
-              fontSize: 12,
-            }}
-          >
-            Back to Lobby
-          </button>
-        </ScaledContainer>
+        <EditorSelector
+          onSelect={setEditorSubView}
+          onBack={handleLeaveEditor}
+        />
       );
   }
 }

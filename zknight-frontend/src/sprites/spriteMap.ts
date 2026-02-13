@@ -57,8 +57,8 @@ export const SPRITE_MAP = {
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
         // contentOffsetY: Higher value = sprite appears higher on screen
-        // Default centered is 128. Increased to 144 to move sprite up by 16px.
-        contentOffsetX: 128, contentOffsetY: 144,
+        // Default auto-centered is (192-64)/2 = 64. Increased to 80 to move sprite up by 16px.
+        contentOffsetY: 80,
         animations: KNIGHT_ANIMATIONS,
     },
     knightB: {
@@ -66,8 +66,8 @@ export const SPRITE_MAP = {
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
         // contentOffsetY: Higher value = sprite appears higher on screen
-        // Default centered is 128. Increased to 144 to move sprite up by 16px.
-        contentOffsetX: 128, contentOffsetY: 144,
+        // Default auto-centered is (192-64)/2 = 64. Increased to 80 to move sprite up by 16px.
+        contentOffsetY: 80,
         animations: KNIGHT_ANIMATIONS,
     },
     barrelStatic: {
@@ -92,7 +92,8 @@ export const SPRITE_MAP = {
         src: '/sprites/explosion.png',
         cols: 10, rows: 1,
         frameWidth: 192, frameHeight: 192,
-        contentOffsetX: 128, contentOffsetY: 128,
+        // Default auto-centered is (192-64)/2 = 64. Increased to 80 to move sprite up by 16px.
+        contentOffsetY: 80,
         animations: {
             explode: {row: 0, startCol: 0, frameCount: 10, fps: 8, loop: false},
         },
@@ -101,7 +102,7 @@ export const SPRITE_MAP = {
         src: '/sprites/tree.png',
         cols: 4, rows: 3,
         frameWidth: 192, frameHeight: 192,
-        contentOffsetX: 128, contentOffsetY: 128,
+        contentOffsetY: 128,
         animations: {
             idle: {row: 0, startCol: 0, frameCount: 4, fps: 2, loop: true},
         },

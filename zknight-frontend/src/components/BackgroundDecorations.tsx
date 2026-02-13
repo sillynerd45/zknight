@@ -1,5 +1,7 @@
 import {Sprite} from '@/components/Sprite';
-import {TREE_POSITIONS, BUSH_POSITIONS} from '@/puzzles/backgroundLayout';
+import {TILE_SIZE} from '@/game/constants';
+import {TREE_POSITIONS, BUSH_POSITIONS, DECO_POSITIONS} from '@/puzzles/backgroundLayout';
+import {getDecoSize} from '@/editor/decoSizes';
 
 interface BackgroundDecorationsProps {
     originX: number;
@@ -37,6 +39,29 @@ export function BackgroundDecorations({originX, originY}: BackgroundDecorationsP
                     zIndex={pos.y}
                 />
             ))}
+            {DECO_POSITIONS.map((item, i) => {
+                const size = getDecoSize(item.asset);
+                const offsetX = (size.width - TILE_SIZE) / 2;
+                const offsetY = size.height - TILE_SIZE;
+                return (
+                    <div
+                        key={`deco-${i}`}
+                        style={{
+                            position: 'absolute',
+                            width: size.width,
+                            height: size.height,
+                            left: item.pos.x * TILE_SIZE - offsetX,
+                            top: item.pos.y * TILE_SIZE - offsetY,
+                            backgroundImage: `url('${item.asset}')`,
+                            backgroundSize: `${size.width}px ${size.height}px`,
+                            backgroundRepeat: 'no-repeat',
+                            imageRendering: 'pixelated',
+                            zIndex: item.pos.y,
+                            pointerEvents: 'none',
+                        }}
+                    />
+                );
+            })}
         </div>
     );
 }
