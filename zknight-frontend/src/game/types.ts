@@ -43,5 +43,7 @@ export interface GameState {
   turnCount: number;
   gameStatus: GameStatus;
   startTime: number | null;
+  explodedKnights: { knightA: boolean; knightB: boolean };
+  destroyedStaticTNT: Position[]; // Track which static TNT have been destroyed
   // stateHistory removed - cycle detection disabled
 }

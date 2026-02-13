@@ -1,10 +1,12 @@
 import type {Position} from '@/game/types';
 import {Sprite} from '@/components/Sprite';
+import {isSamePosition} from '@/game/position';
 
 interface StaticBarrelsProps {
     data: Position[];
     knightA: Position;
     knightB: Position;
+    destroyedStaticTNT: Position[];
     playOriginX: number;
     playOriginY: number;
 }
@@ -12,7 +14,12 @@ interface StaticBarrelsProps {
 const isNearby = (a: Position, b: Position): boolean =>
     Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1 && !(a.x === b.x && a.y === b.y);
 
-export function StaticBarrels({data, knightA, knightB, playOriginX, playOriginY}: StaticBarrelsProps) {
+export function StaticBarrels({data, knightA, knightB, destroyedStaticTNT, playOriginX, playOriginY}: StaticBarrelsProps) {
+    // Filter out destroyed TNT
+    const activeTNT = data.filter(
+        tnt => !destroyedStaticTNT.some(destroyed => isSamePosition(tnt, destroyed))
+    );
+
     return (
         <div
             style={{
@@ -22,7 +29,7 @@ export function StaticBarrels({data, knightA, knightB, playOriginX, playOriginY}
                 zIndex: 2,
             }}
         >
-            {data.map((pos, i) => {
+            {activeTNT.map((pos, i) => {
                 const reactive = isNearby(pos, knightA) || isNearby(pos, knightB);
                 return (
                     <Sprite

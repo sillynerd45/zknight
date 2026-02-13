@@ -14,5 +14,7 @@ export function initGameState(puzzle: Puzzle): GameState {
     turnCount: 0,
     gameStatus: 'idle',
     startTime: null,
+    explodedKnights: { knightA: false, knightB: false },
+    destroyedStaticTNT: [],
   };
 }

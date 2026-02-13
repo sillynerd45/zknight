@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { useGameContext } from '@/context/GameContext';
 
 const overlayStyle: React.CSSProperties = {
@@ -67,13 +66,6 @@ interface ExplosionOverlayProps {
 }
 
 export function ExplosionOverlay({ onReset }: ExplosionOverlayProps) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    timerRef.current = setTimeout(onReset, 1500);
-    return () => clearTimeout(timerRef.current);
-  }, [onReset]);
-
   return (
     <div style={overlayStyle}>
       <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--color-explosion)' }}>

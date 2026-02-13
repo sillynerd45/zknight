@@ -52,6 +52,8 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
           barrels={state.barrels}
           gameStatus={state.gameStatus}
           lastDirection={state.lastDirection}
+          explodedKnights={state.explodedKnights}
+          destroyedStaticTNT={state.destroyedStaticTNT}
           onExplosionComplete={handleExplosionComplete}
         />
         <MoveCounter />

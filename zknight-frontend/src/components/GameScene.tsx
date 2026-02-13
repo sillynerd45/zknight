@@ -23,6 +23,8 @@ interface GameSceneProps {
   barrels: MovingBarrel[];
   gameStatus: GameStatus;
   lastDirection: Direction | null;
+  explodedKnights: { knightA: boolean; knightB: boolean };
+  destroyedStaticTNT: Position[];
   onExplosionComplete?: () => void;
 }
 
@@ -33,6 +35,8 @@ export function GameScene({
   barrels,
   gameStatus,
   lastDirection,
+  explodedKnights,
+  destroyedStaticTNT,
   onExplosionComplete,
 }: GameSceneProps) {
   // Play area origin (centered in container)
@@ -71,6 +75,7 @@ export function GameScene({
         data={puzzle.staticTNT}
         knightA={knightA}
         knightB={knightB}
+        destroyedStaticTNT={destroyedStaticTNT}
         playOriginX={playOriginX}
         playOriginY={playOriginY}
       />
@@ -91,12 +96,15 @@ export function GameScene({
           pos={knightA}
           lastDirection={lastDirection}
           gameStatus={gameStatus}
+          exploded={explodedKnights.knightA}
           onExplosionComplete={onExplosionComplete}
         />
         <KnightB
           pos={knightB}
           lastDirection={lastDirection}
           gameStatus={gameStatus}
+          exploded={explodedKnights.knightB}
+          onExplosionComplete={onExplosionComplete}
         />
       </div>
     </div>

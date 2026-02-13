@@ -3,7 +3,7 @@ import { processTurn } from './processTurn';
 import { initGameState } from './initGameState';
 // detectAndPruneCycle import removed - cycle detection disabled
 import { advanceBarrels } from './barrels';
-import { isDeadly } from './collision';
+import { isStaticTNT, isBarrel } from './collision';
 import { getBarrelPositions } from './barrels';
 import { isSamePosition } from './position';
 
@@ -51,16 +51,50 @@ export function gameReducer(
       const newBarrels = advanceBarrels(state.barrels);
       const barrelPositions = getBarrelPositions(newBarrels);
 
-      // Check if any barrel moved into a knight's position
-      const exploded =
-        isDeadly(state.knightA, puzzle.staticTNT, barrelPositions) ||
-        isDeadly(state.knightB, puzzle.staticTNT, barrelPositions);
+      // Filter out already destroyed static TNT
+      const activeStaticTNT = puzzle.staticTNT.filter(
+        tnt => !state.destroyedStaticTNT.some(destroyed => isSamePosition(tnt, destroyed))
+      );
 
-      if (exploded) {
+      // Check each knight separately for collision with barrels
+      const knightAHitBarrel = isBarrel(state.knightA, barrelPositions);
+      const knightAHitStaticTNT = isStaticTNT(state.knightA, activeStaticTNT);
+      const knightAExploded = knightAHitBarrel || knightAHitStaticTNT;
+
+      const knightBHitBarrel = isBarrel(state.knightB, barrelPositions);
+      const knightBHitStaticTNT = isStaticTNT(state.knightB, activeStaticTNT);
+      const knightBExploded = knightBHitBarrel || knightBHitStaticTNT;
+
+      const anyExplosion = knightAExploded || knightBExploded;
+
+      if (anyExplosion) {
+        // Track destroyed obstacles
+        const newDestroyedStaticTNT = [...state.destroyedStaticTNT];
+        if (knightAHitStaticTNT) {
+          const hitTNT = activeStaticTNT.find(tnt => isSamePosition(state.knightA, tnt));
+          if (hitTNT) newDestroyedStaticTNT.push(hitTNT);
+        }
+        if (knightBHitStaticTNT) {
+          const hitTNT = activeStaticTNT.find(tnt => isSamePosition(state.knightB, tnt));
+          if (hitTNT && !newDestroyedStaticTNT.some(d => isSamePosition(d, hitTNT))) {
+            newDestroyedStaticTNT.push(hitTNT);
+          }
+        }
+
+        // Remove barrels that hit knights
+        const finalBarrels = newBarrels.filter(barrel => {
+          const barrelPos = barrel.path[barrel.step];
+          const hitA = knightAHitBarrel && isSamePosition(state.knightA, barrelPos);
+          const hitB = knightBHitBarrel && isSamePosition(state.knightB, barrelPos);
+          return !(hitA || hitB);
+        });
+
         return {
           ...state,
-          barrels: newBarrels,
+          barrels: finalBarrels,
           gameStatus: 'exploded',
+          explodedKnights: { knightA: knightAExploded, knightB: knightBExploded },
+          destroyedStaticTNT: newDestroyedStaticTNT,
         };
       }
 

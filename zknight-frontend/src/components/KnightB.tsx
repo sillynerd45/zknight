@@ -1,3 +1,4 @@
+import { useState, useCallback, useEffect } from 'react';
 import type { Position, Direction, GameStatus } from '@/game/types';
 import { Sprite } from '@/components/Sprite';
 
@@ -5,6 +6,7 @@ interface KnightBProps {
   pos: Position;
   lastDirection: Direction | null;
   gameStatus: GameStatus;
+  exploded: boolean;
   onExplosionComplete?: () => void;
 }
 
@@ -19,8 +21,23 @@ function getAnimation(lastDirection: Direction | null, gameStatus: GameStatus): 
   }
 }
 
-export function KnightB({ pos, lastDirection, gameStatus, onExplosionComplete }: KnightBProps) {
-  if (gameStatus === 'exploded') {
+export function KnightB({ pos, lastDirection, gameStatus, exploded, onExplosionComplete }: KnightBProps) {
+  const [explosionComplete, setExplosionComplete] = useState(false);
+
+  // Reset explosion state when game restarts
+  useEffect(() => {
+    if (gameStatus !== 'exploded') {
+      setExplosionComplete(false);
+    }
+  }, [gameStatus]);
+
+  const handleExplosionComplete = useCallback(() => {
+    setExplosionComplete(true);
+    onExplosionComplete?.();
+  }, [onExplosionComplete]);
+
+  // Show explosion animation if this knight exploded and animation hasn't completed yet
+  if (gameStatus === 'exploded' && exploded && !explosionComplete) {
     return (
       <Sprite
         spriteKey="explosion"
@@ -28,9 +45,14 @@ export function KnightB({ pos, lastDirection, gameStatus, onExplosionComplete }:
         x={pos.x}
         y={pos.y}
         zIndex={30 + pos.y}
-        onComplete={onExplosionComplete}
+        onComplete={handleExplosionComplete}
       />
     );
+  }
+
+  // Don't render if exploded (explosion animation finished or other knight exploded)
+  if (exploded) {
+    return null;
   }
 
   const { anim, mirror } = getAnimation(lastDirection, gameStatus);

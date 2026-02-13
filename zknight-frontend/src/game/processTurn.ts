@@ -1,6 +1,6 @@
-import type { DirectionVector, GameState, Puzzle } from './types';
+import type { DirectionVector, GameState, Puzzle, Position } from './types';
 import { getBarrelPositions } from './barrels';
-import { isWall, isDeadly } from './collision';
+import { isWall, isStaticTNT, isBarrel } from './collision';
 import { isSamePosition, isInBounds } from './position';
 
 export function processTurn(
@@ -29,21 +29,61 @@ export function processTurn(
   const resolvedA = isWall(boundedA, puzzle.walls) ? state.knightA : boundedA;
   const resolvedB = isWall(boundedB, puzzle.walls) ? state.knightB : boundedB;
 
-  // Step 4: Collision checks (using current barrel positions)
+  // Step 4: Check each knight separately for collisions
   const barrelPositions = getBarrelPositions(state.barrels);
-  const exploded =
-    isSamePosition(resolvedA, resolvedB) ||
-    isDeadly(resolvedA, puzzle.staticTNT, barrelPositions) ||
-    isDeadly(resolvedB, puzzle.staticTNT, barrelPositions);
 
-  if (exploded) {
+  // Filter out already destroyed static TNT
+  const activeStaticTNT = puzzle.staticTNT.filter(
+    tnt => !state.destroyedStaticTNT.some(destroyed => isSamePosition(tnt, destroyed))
+  );
+
+  // Check knight-knight collision (both explode if they collide)
+  const knightsCollided = isSamePosition(resolvedA, resolvedB);
+
+  // Check Knight A collisions
+  const knightAHitStaticTNT = isStaticTNT(resolvedA, activeStaticTNT);
+  const knightAHitBarrel = isBarrel(resolvedA, barrelPositions);
+  const knightAExploded = knightsCollided || knightAHitStaticTNT || knightAHitBarrel;
+
+  // Check Knight B collisions
+  const knightBHitStaticTNT = isStaticTNT(resolvedB, activeStaticTNT);
+  const knightBHitBarrel = isBarrel(resolvedB, barrelPositions);
+  const knightBExploded = knightsCollided || knightBHitStaticTNT || knightBHitBarrel;
+
+  const anyExplosion = knightAExploded || knightBExploded;
+
+  if (anyExplosion) {
+    // Track destroyed obstacles
+    const newDestroyedStaticTNT = [...state.destroyedStaticTNT];
+    if (knightAHitStaticTNT) {
+      const hitTNT = activeStaticTNT.find(tnt => isSamePosition(resolvedA, tnt));
+      if (hitTNT) newDestroyedStaticTNT.push(hitTNT);
+    }
+    if (knightBHitStaticTNT) {
+      const hitTNT = activeStaticTNT.find(tnt => isSamePosition(resolvedB, tnt));
+      if (hitTNT && !newDestroyedStaticTNT.some(d => isSamePosition(d, hitTNT))) {
+        newDestroyedStaticTNT.push(hitTNT);
+      }
+    }
+
+    // Remove destroyed moving barrels
+    const newBarrels = state.barrels.filter(barrel => {
+      const barrelPos = barrel.path[barrel.step];
+      const hitByA = knightAHitBarrel && isSamePosition(resolvedA, barrelPos);
+      const hitByB = knightBHitBarrel && isSamePosition(resolvedB, barrelPos);
+      return !(hitByA || hitByB);
+    });
+
     return {
       ...state,
       knightA: resolvedA,
       knightB: resolvedB,
+      barrels: newBarrels,
       moveHistory: [...state.moveHistory, dir],
       turnCount: state.turnCount + 1,
       gameStatus: 'exploded',
+      explodedKnights: { knightA: knightAExploded, knightB: knightBExploded },
+      destroyedStaticTNT: newDestroyedStaticTNT,
     };
   }
 
