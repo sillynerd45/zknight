@@ -1,5 +1,5 @@
 import type { DirectionVector, GameState, Puzzle } from './types';
-import { advanceBarrels, getBarrelPositions } from './barrels';
+import { getBarrelPositions } from './barrels';
 import { isWall, isDeadly } from './collision';
 import { isSamePosition, isInBounds } from './position';
 
@@ -10,14 +10,14 @@ export function processTurn(
 ): GameState {
   if (state.gameStatus !== 'playing') return state;
 
-  // Step 1: Advance all moving barrels
-  const newBarrels = advanceBarrels(state.barrels);
+  // Note: Barrels are advanced independently by a timer now (via ADVANCE_BARRELS action)
+  // We check collision against the current barrel state
 
-  // Step 2: Calculate intended next positions
+  // Step 1: Calculate intended next positions
   const nextA = { x: state.knightA.x + dir.ax, y: state.knightA.y + dir.ay };
   const nextB = { x: state.knightB.x + dir.bx, y: state.knightB.y + dir.by };
 
-  // Step 3: Boundary check — out-of-bounds treated like walls (knight stays)
+  // Step 2: Boundary check — out-of-bounds treated like walls (knight stays)
   const boundedA = isInBounds(nextA, puzzle.gridWidth, puzzle.gridHeight)
     ? nextA
     : state.knightA;
@@ -25,12 +25,12 @@ export function processTurn(
     ? nextB
     : state.knightB;
 
-  // Step 4: Wall check — if blocked, knight stays
+  // Step 3: Wall check — if blocked, knight stays
   const resolvedA = isWall(boundedA, puzzle.walls) ? state.knightA : boundedA;
   const resolvedB = isWall(boundedB, puzzle.walls) ? state.knightB : boundedB;
 
-  // Step 5: Collision checks
-  const barrelPositions = getBarrelPositions(newBarrels);
+  // Step 4: Collision checks (using current barrel positions)
+  const barrelPositions = getBarrelPositions(state.barrels);
   const exploded =
     isSamePosition(resolvedA, resolvedB) ||
     isDeadly(resolvedA, puzzle.staticTNT, barrelPositions) ||
@@ -41,14 +41,13 @@ export function processTurn(
       ...state,
       knightA: resolvedA,
       knightB: resolvedB,
-      barrels: newBarrels,
       moveHistory: [...state.moveHistory, dir],
       turnCount: state.turnCount + 1,
       gameStatus: 'exploded',
     };
   }
 
-  // Step 6: Check win condition
+  // Step 5: Check win condition
   const won =
     isSamePosition(resolvedA, puzzle.goalA) &&
     isSamePosition(resolvedB, puzzle.goalB);
@@ -57,7 +56,6 @@ export function processTurn(
     ...state,
     knightA: resolvedA,
     knightB: resolvedB,
-    barrels: newBarrels,
     moveHistory: [...state.moveHistory, dir],
     turnCount: state.turnCount + 1,
     gameStatus: won ? 'won' : 'playing',

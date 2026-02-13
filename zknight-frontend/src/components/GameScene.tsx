@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   BASE_WIDTH,
   BASE_HEIGHT,
@@ -7,19 +6,35 @@ import {
   PLAY_GRID_H,
   BG_PADDING_TILES,
 } from '@/game/constants';
-import type { Puzzle, MovingBarrel } from '@/game/types';
+import type { Position, MovingBarrel, Direction, GameStatus, Puzzle } from '@/game/types';
 import { WaterLayer } from '@/components/WaterLayer';
 import { BackgroundDecorations } from '@/components/BackgroundDecorations';
 import { BoardGrid } from '@/components/BoardGrid';
 import { GoalTiles } from '@/components/GoalTiles';
 import { StaticBarrels } from '@/components/StaticBarrels';
 import { MovingBarrels } from '@/components/MovingBarrels';
+import { KnightA } from '@/components/KnightA';
+import { KnightB } from '@/components/KnightB';
 
 interface GameSceneProps {
   puzzle: Puzzle;
+  knightA: Position;
+  knightB: Position;
+  barrels: MovingBarrel[];
+  gameStatus: GameStatus;
+  lastDirection: Direction | null;
+  onExplosionComplete?: () => void;
 }
 
-export function GameScene({ puzzle }: GameSceneProps) {
+export function GameScene({
+  puzzle,
+  knightA,
+  knightB,
+  barrels,
+  gameStatus,
+  lastDirection,
+  onExplosionComplete,
+}: GameSceneProps) {
   // Play area origin (centered in container)
   const playOriginX = (BASE_WIDTH - PLAY_GRID_W * TILE_SIZE) / 2;
   const playOriginY = (BASE_HEIGHT - PLAY_GRID_H * TILE_SIZE) / 2;
@@ -27,12 +42,6 @@ export function GameScene({ puzzle }: GameSceneProps) {
   // Ground grid origin (BG_PADDING_TILES border around play area)
   const groundOriginX = playOriginX - BG_PADDING_TILES * TILE_SIZE;
   const groundOriginY = playOriginY - BG_PADDING_TILES * TILE_SIZE;
-
-  // Initialize barrel runtime state from puzzle data
-  const barrels: MovingBarrel[] = useMemo(
-    () => puzzle.movingTNT.map((b) => ({ ...b, step: 0 })),
-    [puzzle],
-  );
 
   return (
     <div
@@ -60,8 +69,8 @@ export function GameScene({ puzzle }: GameSceneProps) {
       />
       <StaticBarrels
         data={puzzle.staticTNT}
-        knightA={puzzle.knightA}
-        knightB={puzzle.knightB}
+        knightA={knightA}
+        knightB={knightB}
         playOriginX={playOriginX}
         playOriginY={playOriginY}
       />
@@ -70,6 +79,26 @@ export function GameScene({ puzzle }: GameSceneProps) {
         playOriginX={playOriginX}
         playOriginY={playOriginY}
       />
+      {/* Knights rendered inside a play-area-offset container */}
+      <div
+        style={{
+          position: 'absolute',
+          left: playOriginX,
+          top: playOriginY,
+        }}
+      >
+        <KnightA
+          pos={knightA}
+          lastDirection={lastDirection}
+          gameStatus={gameStatus}
+          onExplosionComplete={onExplosionComplete}
+        />
+        <KnightB
+          pos={knightB}
+          lastDirection={lastDirection}
+          gameStatus={gameStatus}
+        />
+      </div>
     </div>
   );
 }

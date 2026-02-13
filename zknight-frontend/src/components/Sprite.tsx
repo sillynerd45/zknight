@@ -9,10 +9,12 @@ interface SpriteProps {
     y: number;
     zIndex: number;
     active?: boolean;
+    mirror?: boolean;
+    transitionDuration?: number; // in milliseconds
     onComplete?: () => void;
 }
 
-export function Sprite({ spriteKey, animation, x, y, zIndex, active, onComplete }: SpriteProps) {
+export function Sprite({ spriteKey, animation, x, y, zIndex, active, mirror, transitionDuration = 600, onComplete }: SpriteProps) {
     const sheet: SpriteSheetConfig = SPRITE_MAP[spriteKey];
     const anim = (sheet.animations as Record<string, SpriteAnimation>)[animation];
     const frameIndex = useAnimatedSprite(anim, { active, onComplete });
@@ -39,8 +41,8 @@ export function Sprite({ spriteKey, animation, x, y, zIndex, active, onComplete 
                 backgroundSize: `${sheet.cols * sheet.frameWidth}px ${sheet.rows * sheet.frameHeight}px`,
                 backgroundRepeat: 'no-repeat',
                 imageRendering: 'pixelated',
-                transform: anim.mirror ? 'scaleX(-1)' : undefined,
-                transition: 'left 0.15s ease, top 0.15s ease',
+                transform: (anim.mirror || mirror) ? 'scaleX(-1)' : undefined,
+                transition: `left ${transitionDuration / 1000}s ease, top ${transitionDuration / 1000}s ease`,
                 zIndex,
                 pointerEvents: 'none',
             }}

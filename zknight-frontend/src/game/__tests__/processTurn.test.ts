@@ -101,24 +101,24 @@ describe('processTurn', () => {
   });
 
   it('detects knight hitting moving barrel → exploded', () => {
-    // Barrel starts at (2,2), advances to (1,2). Knight A moves right to (1,2).
+    // Barrel is at (1,2). Knight A moves right to (1,2) and hits it.
     const puzzle = makePuzzle({
       movingTNT: [
         {
           id: 'b1',
           path: [
-            { x: 2, y: 2 },
             { x: 1, y: 2 },
+            { x: 2, y: 2 },
           ],
           loop: true,
         },
       ],
     });
     const state = playingState(puzzle);
+    // Barrel is at step 0 (position 1,2)
     const next = processTurn(state, RIGHT, puzzle);
 
-    // Barrel advances: step 0→1, now at (1,2)
-    // A moves to (1,2) — hits barrel
+    // A moves to (1,2) — hits barrel at current position
     expect(next.knightA).toEqual({ x: 1, y: 2 });
     expect(next.gameStatus).toBe('exploded');
   });

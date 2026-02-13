@@ -27,6 +27,7 @@ export function MovingBarrels({barrels, playOriginX, playOriginY}: MovingBarrels
                         x={pos.x}
                         y={pos.y}
                         zIndex={pos.y}
+                        transitionDuration={1200}
                     />
                 );
             })}

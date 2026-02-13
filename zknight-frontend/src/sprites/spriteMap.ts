@@ -46,7 +46,7 @@ const STATIC_BARREL_ANIMATIONS: Record<StaticBarrelAnimation, SpriteAnimation> =
 };
 
 const MOVING_BARREL_ANIMATIONS: Record<MovingBarrelAnimation, SpriteAnimation> = {
-    movingRoll: {row: 3, startCol: 0, frameCount: 6, fps: 8, loop: true},
+    movingRoll: {row: 3, startCol: 0, frameCount: 6, fps: 5, loop: true},
 };
 
 // ── Sprite map ─────────────────────────────────────────
@@ -56,26 +56,36 @@ export const SPRITE_MAP = {
         src: '/sprites/knight_blue.png',
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
-        contentOffsetX: 128, contentOffsetY: 128,
+        // contentOffsetY: Higher value = sprite appears higher on screen
+        // Default centered is 128. Increased to 144 to move sprite up by 16px.
+        contentOffsetX: 128, contentOffsetY: 144,
         animations: KNIGHT_ANIMATIONS,
     },
     knightB: {
         src: '/sprites/knight_red.png',
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
-        contentOffsetX: 128, contentOffsetY: 128,
+        // contentOffsetY: Higher value = sprite appears higher on screen
+        // Default centered is 128. Increased to 144 to move sprite up by 16px.
+        contentOffsetX: 128, contentOffsetY: 144,
         animations: KNIGHT_ANIMATIONS,
     },
     barrelStatic: {
         src: '/sprites/barrel_static.png',
         cols: 6, rows: 6,
         frameWidth: 128, frameHeight: 128,
+        // contentOffsetY: Higher value = sprite appears higher on screen
+        // Default auto-centered is (128-64)/2 = 32. Increased to 48 to move sprite up by 16px.
+        contentOffsetY: 48,
         animations: STATIC_BARREL_ANIMATIONS,
     },
     barrelMove: {
         src: '/sprites/barrel_move.png',
         cols: 6, rows: 6,
         frameWidth: 128, frameHeight: 128,
+        // contentOffsetY: Higher value = sprite appears higher on screen
+        // Default auto-centered is (128-64)/2 = 32. Increased to 48 to move sprite up by 16px.
+        contentOffsetY: 48,
         animations: MOVING_BARREL_ANIMATIONS,
     },
     explosion: {
