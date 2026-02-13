@@ -5,7 +5,8 @@ import {GameProvider, useGameContext} from '@/context/GameContext';
 import {useKeyboardInput} from '@/hooks/useKeyboardInput';
 import {MoveCounter} from '@/components/MoveCounter';
 import {RaceTimer} from '@/components/RaceTimer';
-import {WinOverlay, ExplosionOverlay, CycleNotice} from '@/components/GameOverlays';
+import {WinOverlay, ExplosionOverlay} from '@/components/GameOverlays';
+// CycleNotice removed - cycle detection disabled
 import type {Puzzle} from '@/game/types';
 import styles from './editorStyles.module.css';
 
@@ -15,7 +16,7 @@ interface PuzzlePlaytestProps {
 }
 
 function PlaytestInner({onBack}: {onBack: () => void}) {
-    const {state, dispatch, puzzle, cycleJustPruned} = useGameContext();
+    const {state, dispatch, puzzle} = useGameContext();
     const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
 
     useKeyboardInput();
@@ -55,7 +56,7 @@ function PlaytestInner({onBack}: {onBack: () => void}) {
                 />
                 <MoveCounter />
                 <RaceTimer />
-                <CycleNotice visible={cycleJustPruned} />
+                {/* CycleNotice removed - cycle detection disabled */}
                 {state.gameStatus === 'won' && (
                     <WinOverlay turnCount={state.turnCount} elapsed={elapsed} />
                 )}

@@ -86,34 +86,4 @@ export function ExplosionOverlay({ onReset }: ExplosionOverlayProps) {
   );
 }
 
-// ── Cycle Notice ─────────────────────────────────────────
-
-interface CycleNoticeProps {
-  visible: boolean;
-}
-
-export function CycleNotice({ visible }: CycleNoticeProps) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 40,
-        fontFamily: 'monospace',
-        fontSize: 14,
-        color: '#fff',
-        background: 'rgba(0, 0, 0, 0.6)',
-        padding: '4px 16px',
-        borderRadius: 4,
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.3s ease',
-        pointerEvents: 'none',
-        userSelect: 'none',
-      }}
-    >
-      Loop removed
-    </div>
-  );
-}
+// CycleNotice component removed - cycle detection disabled

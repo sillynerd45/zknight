@@ -1,3 +1,11 @@
+/**
+ * DISABLED: This file is no longer used.
+ * Cycle detection has been removed from the game implementation.
+ * Move counter now increases indefinitely without loop detection.
+ *
+ * This file is kept for reference but is not imported anywhere.
+ */
+
 import type { GameState, MovingBarrel, Position } from './types';
 
 export function encodeState(
@@ -9,6 +17,7 @@ export function encodeState(
   return `${knightA.x},${knightA.y}|${knightB.x},${knightB.y}|${barrelSteps}`;
 }
 
+/*
 export function detectAndPruneCycle(state: GameState): {
   state: GameState;
   pruned: boolean;
@@ -43,3 +52,4 @@ export function detectAndPruneCycle(state: GameState): {
     pruned: false,
   };
 }
+*/

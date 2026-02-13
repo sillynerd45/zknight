@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { processTurn } from '../processTurn';
 import { initGameState } from '../initGameState';
 import { advanceBarrels, getBarrelPositions } from '../barrels';
-import { encodeState, detectAndPruneCycle } from '../cycleDetection';
+// cycleDetection imports removed - cycle detection disabled
 import type { Puzzle, GameState } from '../types';
 import { DIRECTION_MAP } from '../directionMap';
 
@@ -216,61 +216,10 @@ describe('advanceBarrels', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cycle detection
+// Cycle detection - DISABLED
 // ---------------------------------------------------------------------------
-
-describe('cycleDetection', () => {
-  it('encodes state correctly', () => {
-    const key = encodeState(
-      { x: 1, y: 2 },
-      { x: 3, y: 4 },
-      [{ id: 'b1', path: [{ x: 0, y: 0 }], loop: true, step: 5 }],
-    );
-    expect(key).toBe('1,2|3,4|5');
-  });
-
-  it('detects and prunes a cycle', () => {
-    const puzzle = makePuzzle({
-      knightA: { x: 1, y: 2 },
-      knightB: { x: 3, y: 2 },
-    });
-    let state = playingState(puzzle);
-
-    // Record initial state
-    const { state: s0 } = detectAndPruneCycle(state);
-    state = s0;
-
-    // Move right: A→(2,2), B→(2,2) — wait, they'd collide.
-    // Let's use UP then DOWN to create a position cycle on a no-barrier puzzle.
-    // UP: A goes (1,1), B goes (3,3)
-    state = processTurn(state, UP, puzzle);
-    const { state: s1 } = detectAndPruneCycle(state);
-    state = s1;
-
-    // DOWN: A goes (1,2), B goes (3,2) — back to start!
-    state = processTurn(state, DOWN, puzzle);
-    const { state: s2, pruned } = detectAndPruneCycle(state);
-
-    expect(pruned).toBe(true);
-    expect(s2.turnCount).toBe(0);
-    expect(s2.moveHistory).toHaveLength(0);
-  });
-
-  it('does not prune when no cycle exists', () => {
-    const puzzle = makePuzzle({});
-    let state = playingState(puzzle);
-
-    const { state: s0 } = detectAndPruneCycle(state);
-    state = s0;
-
-    state = processTurn(state, RIGHT, puzzle);
-    const { state: s1, pruned } = detectAndPruneCycle(state);
-
-    expect(pruned).toBe(false);
-    expect(s1.turnCount).toBe(1);
-    expect(s1.moveHistory).toHaveLength(1);
-  });
-});
+// Cycle detection tests removed - feature disabled per user request
+// Move counter will now increase indefinitely without loop detection
 
 // ---------------------------------------------------------------------------
 // Grid boundary

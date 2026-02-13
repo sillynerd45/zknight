@@ -1,7 +1,7 @@
 import type { Direction, DirectionVector, GameState, Puzzle } from './types';
 import { processTurn } from './processTurn';
 import { initGameState } from './initGameState';
-import { detectAndPruneCycle } from './cycleDetection';
+// detectAndPruneCycle import removed - cycle detection disabled
 import { advanceBarrels } from './barrels';
 import { isDeadly } from './collision';
 import { getBarrelPositions } from './barrels';
@@ -9,8 +9,7 @@ import { isSamePosition } from './position';
 
 export interface ReducerState extends GameState {
   lastDirection: Direction | null;
-  /** Set to true when cycle detection pruned moves on the last MOVE. */
-  _cyclePruned: boolean;
+  // _cyclePruned removed - cycle detection disabled
 }
 
 export type GameAction =
@@ -21,7 +20,7 @@ export type GameAction =
   | { type: 'IDLE' };
 
 export function createInitialState(puzzle: Puzzle): ReducerState {
-  return { ...initGameState(puzzle), lastDirection: null, _cyclePruned: false };
+  return { ...initGameState(puzzle), lastDirection: null };
 }
 
 export function gameReducer(
@@ -32,19 +31,10 @@ export function gameReducer(
   switch (action.type) {
     case 'MOVE': {
       const afterTurn = processTurn(state, action.dir, puzzle);
-      // Only run cycle detection if still playing
-      if (afterTurn.gameStatus === 'playing') {
-        const { state: afterCycle, pruned } = detectAndPruneCycle(afterTurn);
-        return {
-          ...afterCycle,
-          lastDirection: action.direction,
-          _cyclePruned: pruned,
-        };
-      }
+      // Cycle detection disabled - move counter increases indefinitely
       return {
         ...afterTurn,
         lastDirection: action.direction,
-        _cyclePruned: false,
       };
     }
     case 'RESET':
@@ -54,7 +44,6 @@ export function gameReducer(
         ...state,
         gameStatus: 'playing',
         startTime: Date.now(),
-        _cyclePruned: false,
       };
     case 'ADVANCE_BARRELS': {
       if (state.gameStatus !== 'playing') return state;
@@ -72,7 +61,6 @@ export function gameReducer(
           ...state,
           barrels: newBarrels,
           gameStatus: 'exploded',
-          _cyclePruned: false,
         };
       }
 

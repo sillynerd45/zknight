@@ -3,7 +3,6 @@ import {
     useContext,
     useReducer,
     useCallback,
-    useState,
     useEffect,
     useRef,
     type ReactNode,
@@ -21,7 +20,7 @@ interface GameContextValue {
     state: ReducerState;
     dispatch: Dispatch<GameAction>;
     puzzle: Puzzle;
-    cycleJustPruned: boolean;
+    // cycleJustPruned removed - cycle detection disabled
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -42,21 +41,7 @@ export function GameProvider({puzzle, children}: GameProviderProps) {
     );
 
     const [state, dispatch] = useReducer(reducer, puzzle, createInitialState);
-    const [cycleJustPruned, setCycleJustPruned] = useState(false);
-
-    // Watch the _cyclePruned flag from the reducer
-    useEffect(() => {
-        if (state._cyclePruned) {
-            setCycleJustPruned(true);
-        }
-    }, [state._cyclePruned, state.turnCount]);
-
-    // Auto-clear cycle notice after 1 second
-    useEffect(() => {
-        if (!cycleJustPruned) return;
-        const timer = setTimeout(() => setCycleJustPruned(false), 1000);
-        return () => clearTimeout(timer);
-    }, [cycleJustPruned]);
+    // cycleJustPruned state removed - cycle detection disabled
 
     // Auto-advance barrels every 1200ms when playing
     useEffect(() => {
@@ -70,7 +55,7 @@ export function GameProvider({puzzle, children}: GameProviderProps) {
     }, [state.gameStatus, dispatch]);
 
     return (
-        <GameContext.Provider value={{state, dispatch, puzzle, cycleJustPruned}}>
+        <GameContext.Provider value={{state, dispatch, puzzle}}>
             {children}
         </GameContext.Provider>
     );
