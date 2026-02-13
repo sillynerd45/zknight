@@ -6,8 +6,8 @@
   --play-grid-h: 7;
   --bg-grid-w: 15;
   --bg-grid-h: 11;
-  --base-width: 1280px;
-  --base-height: 720px;
+  --base-width: 1600px;
+  --base-height: 900px;
 
   /* Game colors */
   --color-water: #1a3a5c;
@@ -24,6 +24,11 @@
   --color-moves-normal: #888;
   --color-moves-warning: #cc9900;
   --color-moves-danger: #cc3333;
+}
+
+/* Fill viewport gaps with water color when aspect ratio doesn't match */
+html, body {
+  background-color: var(--color-water);
 }
 
 /* Game canvas resets */

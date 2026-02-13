@@ -18,6 +18,9 @@ export interface SpriteSheetConfig {
     frameWidth: number;  // pixel width of one frame cell (including padding)
     frameHeight: number; // pixel height of one frame cell (including padding)
     animations: Record<string, SpriteAnimation>;
+    /** Pixel offset of the 64×64 content within each frame. Defaults to centered. */
+    contentOffsetX?: number;
+    contentOffsetY?: number;
 }
 
 // ── Knight animation states ────────────────────────────
@@ -53,12 +56,14 @@ export const SPRITE_MAP = {
         src: '/sprites/knight_blue.png',
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
+        contentOffsetX: 128, contentOffsetY: 128,
         animations: KNIGHT_ANIMATIONS,
     },
     knightB: {
         src: '/sprites/knight_red.png',
         cols: 6, rows: 8,
         frameWidth: 192, frameHeight: 192,
+        contentOffsetX: 128, contentOffsetY: 128,
         animations: KNIGHT_ANIMATIONS,
     },
     barrelStatic: {
@@ -77,6 +82,7 @@ export const SPRITE_MAP = {
         src: '/sprites/explosion.png',
         cols: 10, rows: 1,
         frameWidth: 192, frameHeight: 192,
+        contentOffsetX: 128, contentOffsetY: 128,
         animations: {
             explode: {row: 0, startCol: 0, frameCount: 10, fps: 8, loop: false},
         },
@@ -85,6 +91,7 @@ export const SPRITE_MAP = {
         src: '/sprites/tree.png',
         cols: 4, rows: 3,
         frameWidth: 192, frameHeight: 192,
+        contentOffsetX: 128, contentOffsetY: 128,
         animations: {
             idle: {row: 0, startCol: 0, frameCount: 4, fps: 2, loop: true},
         },
