@@ -109,6 +109,20 @@ export function processTurn(
     isSamePosition(resolvedA, puzzle.goalA) &&
     isSamePosition(resolvedB, puzzle.goalB);
 
+  if (won) {
+    // Debug: export move history for ZK circuit testing
+    const allMoves = [...state.moveHistory, dir];
+    const circuitMoves = allMoves.map(d => {
+      if (d.ay === -1) return 0; // Up
+      if (d.ay === 1) return 1;  // Down
+      if (d.ax === -1) return 2; // Left
+      if (d.ax === 1) return 3;  // Right
+      return 4; // NoOp
+    });
+    console.log('[ZK DEBUG] Puzzle solved! Move count:', circuitMoves.length);
+    console.log('[ZK DEBUG] Circuit moves:', JSON.stringify(circuitMoves));
+  }
+
   return {
     ...state,
     knightA: resolvedA,

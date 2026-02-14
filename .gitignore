@@ -41,3 +41,11 @@ frontend-template/*.tsbuildinfo
 Thumbs.db
 
 development/
+zk/build/
+zk/*.wtns
+zk/test_*.json
+zk/bad_*.json
+*.ptau
+*.r1cs
+*.sym
+*.zkey
