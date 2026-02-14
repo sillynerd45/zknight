@@ -205,10 +205,7 @@ template ZKnight() {
     component barrelCheckB[512][2];
 
     component isPastEnd[512];
-    component isEvenTick[512];
 
-    signal tMod2[512];
-    signal shouldAdvance[512];
     signal nextStep[512][2];
     signal div[512][2];
     signal mod[512][2];
@@ -256,20 +253,14 @@ template ZKnight() {
         isPastEnd[t].in[0] <== t;
         isPastEnd[t].in[1] <== tick_count;
 
-        // ── Step 2: Barrel advancement (every 2 ticks) ─────────────────
-        // Check if t is even: t % 2 == 0
-        tMod2[t] <== t - 2 * (t \ 2);  // t % 2
-
-        isEvenTick[t] = IsZero();
-        isEvenTick[t].in <== tMod2[t];
-
-        // Advance barrels if even tick and not past end
-        shouldAdvance[t] <== isEvenTick[t].out * (1 - isPastEnd[t].out);
+        // ── Step 2: Barrel advancement (every 2 ticks, skip tick 0) ────
+        // Use compile-time var since t is loop constant (saves ~512 constraints)
+        var shouldAdvanceHere = (t > 0 && t % 2 == 0) ? 1 : 0;
 
         // For each barrel
         for (var b = 0; b < 2; b++) {
-            // nextStep = currentStep + shouldAdvance
-            nextStep[t][b] <== barrelSteps[t][b] + shouldAdvance[t];
+            // nextStep = currentStep + shouldAdvanceHere
+            nextStep[t][b] <== barrelSteps[t][b] + shouldAdvanceHere;
 
             // wrappedStep = nextStep % barrel_path_lengths[b]
             // div = nextStep >= path_length ? 1 : 0
@@ -283,14 +274,15 @@ template ZKnight() {
             barrelSteps[t+1][b] <== mod[t][b];
         }
 
-        // Get current barrel positions based on current steps
+        // Get barrel positions based on POST-advancement steps (Bug fix)
+        // Per spec (ZKNIGHT_CONTEXT.md Section 5), barrels advance BEFORE collision checks
         for (var b = 0; b < 2; b++) {
             xSum[t][b][0] <== 0;
             ySum[t][b][0] <== 0;
 
             for (var s = 0; s < 16; s++) {
                 stepEq[t][b][s] = IsEqual();
-                stepEq[t][b][s].in[0] <== barrelSteps[t][b];
+                stepEq[t][b][s].in[0] <== barrelSteps[t+1][b];  // Use post-advancement step
                 stepEq[t][b][s].in[1] <== s;
                 stepSelectors[t][b][s] <== stepEq[t][b][s].out;
 

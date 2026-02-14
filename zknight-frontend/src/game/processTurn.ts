@@ -1,17 +1,50 @@
-import type { DirectionVector, GameState, Puzzle, Position } from './types';
+import type { DirectionVector, GameState, Puzzle, Position, MovingBarrel } from './types';
 import { getBarrelPositions } from './barrels';
 import { isWall, isStaticTNT, isBarrel } from './collision';
 import { isSamePosition, isInBounds } from './position';
 
 export function processTurn(
   state: GameState,
-  dir: DirectionVector,
+  dir: DirectionVector | null,  // null = NoOp (knights don't move)
   puzzle: Puzzle,
+  barrelOverride?: MovingBarrel[],  // If provided, use these barrels instead of state.barrels
 ): GameState {
   if (state.gameStatus !== 'playing') return state;
 
-  // Note: Barrels are advanced independently by a timer now (via ADVANCE_BARRELS action)
-  // We check collision against the current barrel state
+  // Use override barrels if provided (for tick-based model where barrels are pre-advanced)
+  // Otherwise use state barrels (for backward compatibility with tests)
+  const barrels = barrelOverride ?? state.barrels;
+  const barrelPositions = getBarrelPositions(barrels);
+
+  // Filter out already destroyed static TNT
+  const activeStaticTNT = puzzle.staticTNT.filter(
+    tnt => !state.destroyedStaticTNT.some(destroyed => isSamePosition(tnt, destroyed))
+  );
+
+  // If NoOp (no player input), knights don't move — but check barrel-into-knight collision
+  if (dir === null) {
+    const knightAHitBarrel = isBarrel(state.knightA, barrelPositions);
+    const knightBHitBarrel = isBarrel(state.knightB, barrelPositions);
+    const anyExplosion = knightAHitBarrel || knightBHitBarrel;
+
+    if (anyExplosion) {
+      // Remove destroyed moving barrels
+      const newBarrels = barrels.filter(barrel => {
+        const barrelPos = barrel.path[barrel.step];
+        const hitByA = knightAHitBarrel && isSamePosition(state.knightA, barrelPos);
+        const hitByB = knightBHitBarrel && isSamePosition(state.knightB, barrelPos);
+        return !(hitByA || hitByB);
+      });
+
+      return {
+        ...state,
+        barrels: newBarrels,
+        gameStatus: 'exploded',
+        explodedKnights: { knightA: knightAHitBarrel, knightB: knightBHitBarrel },
+      };
+    }
+    return state; // No movement, no collision
+  }
 
   // Step 1: Calculate intended next positions
   const nextA = { x: state.knightA.x + dir.ax, y: state.knightA.y + dir.ay };
@@ -30,12 +63,7 @@ export function processTurn(
   const resolvedB = isWall(boundedB, puzzle.walls) ? state.knightB : boundedB;
 
   // Step 4: Check each knight separately for collisions
-  const barrelPositions = getBarrelPositions(state.barrels);
-
-  // Filter out already destroyed static TNT
-  const activeStaticTNT = puzzle.staticTNT.filter(
-    tnt => !state.destroyedStaticTNT.some(destroyed => isSamePosition(tnt, destroyed))
-  );
+  // (barrelPositions and activeStaticTNT already computed above)
 
   // Check knight-knight collision (both explode if they collide)
   const knightsCollided = isSamePosition(resolvedA, resolvedB);
@@ -81,7 +109,7 @@ export function processTurn(
     }
 
     // Remove destroyed moving barrels
-    const newBarrels = state.barrels.filter(barrel => {
+    const newBarrels = barrels.filter(barrel => {
       const barrelPos = barrel.path[barrel.step];
       const hitByA = knightAHitBarrel && isSamePosition(resolvedA, barrelPos);
       const hitByB = knightBHitBarrel && isSamePosition(resolvedB, barrelPos);
@@ -95,8 +123,7 @@ export function processTurn(
       knightA: knightsCrossing ? state.knightA : resolvedA,
       knightB: knightsCrossing ? state.knightB : resolvedB,
       barrels: newBarrels,
-      moveHistory: [...state.moveHistory, dir],
-      turnCount: state.turnCount + 1,
+      turnCount: state.turnCount + 1,  // Increment turn count (actual moves, not ticks)
       gameStatus: 'exploded',
       explodedKnights: { knightA: knightAExploded, knightB: knightBExploded },
       destroyedStaticTNT: newDestroyedStaticTNT,
@@ -110,25 +137,20 @@ export function processTurn(
     isSamePosition(resolvedB, puzzle.goalB);
 
   if (won) {
-    // Debug: export move history for ZK circuit testing
-    const allMoves = [...state.moveHistory, dir];
-    const circuitMoves = allMoves.map(d => {
-      if (d.ay === -1) return 0; // Up
-      if (d.ay === 1) return 1;  // Down
-      if (d.ax === -1) return 2; // Left
-      if (d.ax === 1) return 3;  // Right
-      return 4; // NoOp
-    });
-    console.log('[ZK DEBUG] Puzzle solved! Move count:', circuitMoves.length);
-    console.log('[ZK DEBUG] Circuit moves:', JSON.stringify(circuitMoves));
+    // Debug: export tick history for ZK circuit testing
+    // The current tick's move value will be added by the TICK reducer
+    console.log('[ZK DEBUG] Puzzle solved!');
+    console.log('[ZK DEBUG] Tick count:', state.tickCount + 1);
+    console.log('[ZK DEBUG] Turn count (actual moves):', state.turnCount + 1);
+    console.log('[ZK DEBUG] Tick history:', JSON.stringify(state.tickHistory));
+    console.log('[ZK DEBUG] Note: Current tick not yet in history (added by reducer)');
   }
 
   return {
     ...state,
     knightA: resolvedA,
     knightB: resolvedB,
-    moveHistory: [...state.moveHistory, dir],
-    turnCount: state.turnCount + 1,
+    turnCount: state.turnCount + 1,  // Increment turn count (actual moves only)
     gameStatus: won ? 'won' : 'playing',
     crossingExplosionPos: null,
   };

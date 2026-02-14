@@ -20,6 +20,7 @@ interface GameContextValue {
     state: ReducerState;
     dispatch: Dispatch<GameAction>;
     puzzle: Puzzle;
+    scheduleNoOpTick: () => void;  // Reset the NoOp timer (called by keyboard handler)
     // cycleJustPruned removed - cycle detection disabled
 }
 
@@ -43,19 +44,36 @@ export function GameProvider({puzzle, children}: GameProviderProps) {
     const [state, dispatch] = useReducer(reducer, puzzle, createInitialState);
     // cycleJustPruned state removed - cycle detection disabled
 
-    // Auto-advance barrels every 1200ms when playing
+    const noOpTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    // Schedule the next NoOp tick (600ms from now)
+    // Use ref to break circular dependency in recursive callback
+    const scheduleRef = useRef<(() => void) | undefined>(undefined);
+
     useEffect(() => {
-        if (state.gameStatus !== 'playing') return;
+        scheduleRef.current = () => {
+            clearTimeout(noOpTimerRef.current);
+            noOpTimerRef.current = setTimeout(() => {
+                dispatch({type: 'TICK', move: 4, direction: null});  // NoOp tick
+                scheduleRef.current?.(); // Chain next NoOp
+            }, 600);
+        };
+    }, [dispatch]);
 
-        const interval = setInterval(() => {
-            dispatch({type: 'ADVANCE_BARRELS'});
-        }, 1200);
+    const scheduleNoOpTick = useCallback(() => {
+        scheduleRef.current?.();
+    }, []);
 
-        return () => clearInterval(interval);
-    }, [state.gameStatus, dispatch]);
+    // Start NoOp ticking when game starts playing
+    useEffect(() => {
+        if (state.gameStatus === 'playing') {
+            scheduleNoOpTick();
+        }
+        return () => clearTimeout(noOpTimerRef.current);
+    }, [state.gameStatus, scheduleNoOpTick]);
 
     return (
-        <GameContext.Provider value={{state, dispatch, puzzle}}>
+        <GameContext.Provider value={{state, dispatch, puzzle, scheduleNoOpTick}}>
             {children}
         </GameContext.Provider>
     );

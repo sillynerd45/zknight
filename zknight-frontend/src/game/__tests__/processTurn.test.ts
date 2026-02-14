@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { processTurn } from '../processTurn';
 import { initGameState } from '../initGameState';
 import { advanceBarrels, getBarrelPositions } from '../barrels';
-// cycleDetection imports removed - cycle detection disabled
 import type { Puzzle, GameState } from '../types';
 import { DIRECTION_MAP } from '../directionMap';
 
@@ -40,10 +39,10 @@ function playingState(puzzle: Puzzle): GameState {
 }
 
 // ---------------------------------------------------------------------------
-// processTurn
+// processTurn - Basic Movement
 // ---------------------------------------------------------------------------
 
-describe('processTurn', () => {
+describe('processTurn - basic movement', () => {
   it('moves both knights correctly on ArrowRight', () => {
     const state = playingState(basePuzzle);
     const next = processTurn(state, RIGHT, basePuzzle);
@@ -54,7 +53,6 @@ describe('processTurn', () => {
     expect(next.knightB).toEqual({ x: 3, y: 2 });
     expect(next.turnCount).toBe(1);
     expect(next.gameStatus).toBe('playing');
-    expect(next.moveHistory).toHaveLength(1);
   });
 
   it('blocks knight A with wall while knight B still moves', () => {
@@ -70,6 +68,23 @@ describe('processTurn', () => {
     expect(next.gameStatus).toBe('playing');
   });
 
+  it('treats out-of-bounds like a wall — knight stays', () => {
+    // A at left edge (0,2), press LEFT → A tries (-1,2), stays at (0,2)
+    const state = playingState(basePuzzle);
+    const next = processTurn(state, LEFT, basePuzzle);
+
+    // A stays (out of bounds)
+    expect(next.knightA).toEqual({ x: 0, y: 2 });
+    // B at right edge (4,2), B direction on LEFT is +x → (5,2) out of bounds, stays
+    expect(next.knightB).toEqual({ x: 4, y: 2 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// processTurn - Collisions
+// ---------------------------------------------------------------------------
+
+describe('processTurn - collisions', () => {
   it('detects knight collision → exploded', () => {
     // 3×1 grid: A at (0,0), B at (2,0). Press RIGHT → both land on (1,0)
     const puzzle = makePuzzle({
@@ -122,7 +137,13 @@ describe('processTurn', () => {
     expect(next.knightA).toEqual({ x: 1, y: 2 });
     expect(next.gameStatus).toBe('exploded');
   });
+});
 
+// ---------------------------------------------------------------------------
+// processTurn - Win Condition
+// ---------------------------------------------------------------------------
+
+describe('processTurn - win condition', () => {
   it('triggers win condition when both knights reach goals', () => {
     // A one step from goalA, B one step from goalB
     const puzzle = makePuzzle({
@@ -137,6 +158,47 @@ describe('processTurn', () => {
     expect(next.knightB).toEqual({ x: 0, y: 2 });
     expect(next.gameStatus).toBe('won');
   });
+});
+
+// ---------------------------------------------------------------------------
+// processTurn - NoOp Handling
+// ---------------------------------------------------------------------------
+
+describe('processTurn - NoOp ticks', () => {
+  it('does not move knights on NoOp (dir = null)', () => {
+    const state = playingState(basePuzzle);
+    const next = processTurn(state, null, basePuzzle);
+
+    // Knights don't move
+    expect(next.knightA).toEqual({ x: 0, y: 2 });
+    expect(next.knightB).toEqual({ x: 4, y: 2 });
+    expect(next.gameStatus).toBe('playing');
+  });
+
+  it('detects barrel-into-knight collision on NoOp', () => {
+    // Barrel at (0,2) — same as knight A position
+    const puzzle = makePuzzle({
+      movingTNT: [
+        {
+          id: 'b1',
+          path: [
+            { x: 0, y: 2 }, // Same as knightA
+            { x: 1, y: 2 },
+          ],
+          loop: true,
+        },
+      ],
+    });
+    const state = playingState(puzzle);
+
+    // Barrel is at step 0 (0,2) — knight A is also at (0,2)
+    // Pass advanced barrels to simulate barrel moving into knight
+    const next = processTurn(state, null, puzzle, state.barrels);
+
+    expect(next.gameStatus).toBe('exploded');
+    expect(next.explodedKnights.knightA).toBe(true);
+    expect(next.explodedKnights.knightB).toBe(false);
+  });
 
   it('does not process turns when game is not playing', () => {
     const state = initGameState(basePuzzle); // gameStatus = 'idle'
@@ -147,11 +209,45 @@ describe('processTurn', () => {
 });
 
 // ---------------------------------------------------------------------------
+// processTurn - Barrel Override
+// ---------------------------------------------------------------------------
+
+describe('processTurn - barrel override parameter', () => {
+  it('uses barrel override instead of state barrels', () => {
+    const puzzle = makePuzzle({
+      movingTNT: [
+        {
+          id: 'b1',
+          path: [
+            { x: 5, y: 5 }, // Far away
+            { x: 1, y: 2 }, // Knight A target position
+          ],
+          loop: true,
+        },
+      ],
+    });
+    const state = playingState(puzzle);
+    // State barrel is at step 0 (5,5) — no collision
+
+    // Advance barrel to step 1 (1,2)
+    const advancedBarrels = advanceBarrels(state.barrels);
+
+    // Without override: no collision (barrel at 5,5)
+    const withoutOverride = processTurn(state, RIGHT, puzzle);
+    expect(withoutOverride.gameStatus).toBe('playing');
+
+    // With override: collision (barrel at 1,2)
+    const withOverride = processTurn(state, RIGHT, puzzle, advancedBarrels);
+    expect(withOverride.gameStatus).toBe('exploded');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Barrel advancement
 // ---------------------------------------------------------------------------
 
 describe('advanceBarrels', () => {
-  it('advances barrel one step per turn and loops', () => {
+  it('advances barrel one step per call and loops', () => {
     const barrels = [
       {
         id: 'b1',
@@ -212,28 +308,5 @@ describe('advanceBarrels', () => {
     const after = advanceBarrels(barrels);
     expect(barrels[0].step).toBe(0); // original unchanged
     expect(after[0].step).toBe(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Cycle detection - DISABLED
-// ---------------------------------------------------------------------------
-// Cycle detection tests removed - feature disabled per user request
-// Move counter will now increase indefinitely without loop detection
-
-// ---------------------------------------------------------------------------
-// Grid boundary
-// ---------------------------------------------------------------------------
-
-describe('grid boundary', () => {
-  it('treats out-of-bounds like a wall — knight stays', () => {
-    // A at left edge (0,2), press LEFT → A tries (-1,2), stays at (0,2)
-    const state = playingState(basePuzzle);
-    const next = processTurn(state, LEFT, basePuzzle);
-
-    // A stays (out of bounds)
-    expect(next.knightA).toEqual({ x: 0, y: 2 });
-    // B at right edge (4,2), B direction on LEFT is +x → (5,2) out of bounds, stays
-    expect(next.knightB).toEqual({ x: 4, y: 2 });
   });
 });

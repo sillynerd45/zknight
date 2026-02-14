@@ -10,8 +10,9 @@ export function initGameState(puzzle: Puzzle): GameState {
     knightA,
     knightB,
     barrels,
-    moveHistory: [],
-    turnCount: 0,
+    tickCount: 0,
+    tickHistory: [],
+    turnCount: 0,  // Actual player moves (excludes NoOps)
     gameStatus: 'idle',
     startTime: null,
     explodedKnights: { knightA: false, knightB: false },

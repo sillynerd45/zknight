@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { DIRECTION_MAP } from '@/game/directionMap';
+import { DIRECTION_TO_MOVE } from '@/game/types';
 import type { Direction } from '@/game/types';
 import type { GameAction } from '@/game/gameReducer';
 import { useGameContext } from '@/context/GameContext';
@@ -18,7 +19,7 @@ const WASD_MAP: Record<string, Direction> = {
 const MOVE_COOLDOWN_MS = 600;
 
 export function useKeyboardInput() {
-  const { state, dispatch } = useGameContext();
+  const { state, dispatch, scheduleNoOpTick } = useGameContext();
   const isAnimatingRef = useRef(false);
   const statusRef = useRef(state.gameStatus);
   const pressedKeysRef = useRef(new Set<string>());
@@ -43,11 +44,16 @@ export function useKeyboardInput() {
       e.preventDefault();
 
       pressedKeysRef.current.add(e.key);
-      const dir = DIRECTION_MAP[direction];
       isAnimatingRef.current = true;
 
-      dispatch({ type: 'MOVE', dir, direction });
+      // Dispatch tick immediately (no lag)
+      const move = DIRECTION_TO_MOVE[direction];
+      dispatch({ type: 'TICK', move, direction });
 
+      // Reset the NoOp timer (next NoOp in 600ms from now)
+      scheduleNoOpTick();
+
+      // Animation cooldown
       setTimeout(() => {
         dispatch({ type: 'IDLE' });
         isAnimatingRef.current = false;
@@ -64,5 +70,5 @@ export function useKeyboardInput() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [dispatch]);
+  }, [dispatch, scheduleNoOpTick]);
 }
