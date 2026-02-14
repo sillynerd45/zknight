@@ -18,6 +18,7 @@ interface PuzzlePlaytestProps {
 function PlaytestInner({onBack}: {onBack: () => void}) {
     const {state, dispatch, puzzle} = useGameContext();
     const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
+    const [showWinOverlay, setShowWinOverlay] = useState(false);
 
     useKeyboardInput();
 
@@ -28,6 +29,18 @@ function PlaytestInner({onBack}: {onBack: () => void}) {
     useEffect(() => {
         if (state.gameStatus !== 'exploded') {
             setShowExplosionOverlay(false);
+        }
+    }, [state.gameStatus]);
+
+    // Show win overlay after animation completes (600ms delay)
+    useEffect(() => {
+        if (state.gameStatus === 'won') {
+            const timer = setTimeout(() => {
+                setShowWinOverlay(true);
+            }, 600);
+            return () => clearTimeout(timer);
+        } else {
+            setShowWinOverlay(false);
         }
     }, [state.gameStatus]);
 
@@ -54,12 +67,13 @@ function PlaytestInner({onBack}: {onBack: () => void}) {
                     lastDirection={state.lastDirection}
                     explodedKnights={state.explodedKnights}
                     destroyedStaticTNT={state.destroyedStaticTNT}
+                    crossingExplosionPos={state.crossingExplosionPos}
                     onExplosionComplete={handleExplosionComplete}
                 />
                 <MoveCounter />
                 <RaceTimer />
                 {/* CycleNotice removed - cycle detection disabled */}
-                {state.gameStatus === 'won' && (
+                {showWinOverlay && (
                     <WinOverlay turnCount={state.turnCount} elapsed={elapsed} />
                 )}
                 {state.gameStatus === 'exploded' && showExplosionOverlay && (

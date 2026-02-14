@@ -15,6 +15,7 @@ import { StaticBarrels } from '@/components/StaticBarrels';
 import { MovingBarrels } from '@/components/MovingBarrels';
 import { KnightA } from '@/components/KnightA';
 import { KnightB } from '@/components/KnightB';
+import { Sprite } from '@/components/Sprite';
 
 interface GameSceneProps {
   puzzle: Puzzle;
@@ -25,6 +26,7 @@ interface GameSceneProps {
   lastDirection: Direction | null;
   explodedKnights: { knightA: boolean; knightB: boolean };
   destroyedStaticTNT: Position[];
+  crossingExplosionPos: Position | null;
   onExplosionComplete?: () => void;
 }
 
@@ -37,6 +39,7 @@ export function GameScene({
   lastDirection,
   explodedKnights,
   destroyedStaticTNT,
+  crossingExplosionPos,
   onExplosionComplete,
 }: GameSceneProps) {
   // Play area origin (centered in container)
@@ -97,6 +100,7 @@ export function GameScene({
           lastDirection={lastDirection}
           gameStatus={gameStatus}
           exploded={explodedKnights.knightA}
+          isCrossing={crossingExplosionPos !== null}
           onExplosionComplete={onExplosionComplete}
         />
         <KnightB
@@ -104,8 +108,21 @@ export function GameScene({
           lastDirection={lastDirection}
           gameStatus={gameStatus}
           exploded={explodedKnights.knightB}
+          isCrossing={crossingExplosionPos !== null}
           onExplosionComplete={onExplosionComplete}
         />
+        {/* Render crossing explosion at midpoint */}
+        {crossingExplosionPos && gameStatus === 'exploded' && (
+          <Sprite
+            spriteKey="explosion"
+            animation="explode"
+            x={crossingExplosionPos.x}
+            y={crossingExplosionPos.y}
+            zIndex={40}
+            transitionDuration={0}
+            onComplete={onExplosionComplete}
+          />
+        )}
       </div>
     </div>
   );

@@ -43,6 +43,11 @@ function formatTime(ms: number): string {
 export function WinOverlay({ turnCount, elapsed }: WinOverlayProps) {
   const { dispatch } = useGameContext();
 
+  const handlePlayAgain = () => {
+    dispatch({ type: 'RESET' });
+    dispatch({ type: 'START' });
+  };
+
   return (
     <div style={overlayStyle}>
       <div style={{ fontSize: 32, fontWeight: 'bold' }}>Puzzle Solved!</div>
@@ -52,7 +57,7 @@ export function WinOverlay({ turnCount, elapsed }: WinOverlayProps) {
       <div style={{ fontSize: 18 }}>
         Moves: {turnCount}
       </div>
-      <button style={buttonStyle} onClick={() => dispatch({ type: 'RESET' })}>
+      <button style={buttonStyle} onClick={handlePlayAgain}>
         Play Again
       </button>
     </div>

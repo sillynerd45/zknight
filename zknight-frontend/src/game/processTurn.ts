@@ -40,15 +40,29 @@ export function processTurn(
   // Check knight-knight collision (both explode if they collide)
   const knightsCollided = isSamePosition(resolvedA, resolvedB);
 
+  // Check if knights are crossing (swapping positions)
+  const knightsCrossing =
+    !knightsCollided &&
+    isSamePosition(state.knightA, resolvedB) &&
+    isSamePosition(state.knightB, resolvedA);
+
+  // Calculate midpoint position for crossing explosion
+  const crossingExplosionPos = knightsCrossing
+    ? {
+        x: (state.knightA.x + state.knightB.x) / 2,
+        y: (state.knightA.y + state.knightB.y) / 2,
+      }
+    : null;
+
   // Check Knight A collisions
   const knightAHitStaticTNT = isStaticTNT(resolvedA, activeStaticTNT);
   const knightAHitBarrel = isBarrel(resolvedA, barrelPositions);
-  const knightAExploded = knightsCollided || knightAHitStaticTNT || knightAHitBarrel;
+  const knightAExploded = knightsCollided || knightsCrossing || knightAHitStaticTNT || knightAHitBarrel;
 
   // Check Knight B collisions
   const knightBHitStaticTNT = isStaticTNT(resolvedB, activeStaticTNT);
   const knightBHitBarrel = isBarrel(resolvedB, barrelPositions);
-  const knightBExploded = knightsCollided || knightBHitStaticTNT || knightBHitBarrel;
+  const knightBExploded = knightsCollided || knightsCrossing || knightBHitStaticTNT || knightBHitBarrel;
 
   const anyExplosion = knightAExploded || knightBExploded;
 
@@ -76,14 +90,17 @@ export function processTurn(
 
     return {
       ...state,
-      knightA: resolvedA,
-      knightB: resolvedB,
+      // If crossing, keep knights at original positions (they disappear immediately)
+      // Otherwise, move to resolved positions
+      knightA: knightsCrossing ? state.knightA : resolvedA,
+      knightB: knightsCrossing ? state.knightB : resolvedB,
       barrels: newBarrels,
       moveHistory: [...state.moveHistory, dir],
       turnCount: state.turnCount + 1,
       gameStatus: 'exploded',
       explodedKnights: { knightA: knightAExploded, knightB: knightBExploded },
       destroyedStaticTNT: newDestroyedStaticTNT,
+      crossingExplosionPos,
     };
   }
 
@@ -99,5 +116,6 @@ export function processTurn(
     moveHistory: [...state.moveHistory, dir],
     turnCount: state.turnCount + 1,
     gameStatus: won ? 'won' : 'playing',
+    crossingExplosionPos: null,
   };
 }

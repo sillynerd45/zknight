@@ -45,5 +45,6 @@ export interface GameState {
   startTime: number | null;
   explodedKnights: { knightA: boolean; knightB: boolean };
   destroyedStaticTNT: Position[]; // Track which static TNT have been destroyed
+  crossingExplosionPos: Position | null; // Position where knights crossed (can be fractional)
   // stateHistory removed - cycle detection disabled
 }

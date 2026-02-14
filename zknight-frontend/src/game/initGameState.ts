@@ -16,5 +16,6 @@ export function initGameState(puzzle: Puzzle): GameState {
     startTime: null,
     explodedKnights: { knightA: false, knightB: false },
     destroyedStaticTNT: [],
+    crossingExplosionPos: null,
   };
 }

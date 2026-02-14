@@ -7,6 +7,7 @@ interface KnightBProps {
   lastDirection: Direction | null;
   gameStatus: GameStatus;
   exploded: boolean;
+  isCrossing: boolean;
   onExplosionComplete?: () => void;
 }
 
@@ -21,7 +22,7 @@ function getAnimation(lastDirection: Direction | null, gameStatus: GameStatus): 
   }
 }
 
-export function KnightB({ pos, lastDirection, gameStatus, exploded, onExplosionComplete }: KnightBProps) {
+export function KnightB({ pos, lastDirection, gameStatus, exploded, isCrossing, onExplosionComplete }: KnightBProps) {
   const [explosionComplete, setExplosionComplete] = useState(false);
 
   // Reset explosion state when game restarts
@@ -36,6 +37,12 @@ export function KnightB({ pos, lastDirection, gameStatus, exploded, onExplosionC
     onExplosionComplete?.();
   }, [onExplosionComplete]);
 
+  // If crossing, don't render individual explosion (rendered at midpoint in GameScene)
+  // Just disappear immediately
+  if (gameStatus === 'exploded' && isCrossing && exploded) {
+    return null;
+  }
+
   // Show explosion animation if this knight exploded and animation hasn't completed yet
   if (gameStatus === 'exploded' && exploded && !explosionComplete) {
     return (
@@ -45,6 +52,7 @@ export function KnightB({ pos, lastDirection, gameStatus, exploded, onExplosionC
         x={pos.x}
         y={pos.y}
         zIndex={30 + pos.y}
+        transitionDuration={0}
         onComplete={handleExplosionComplete}
       />
     );
