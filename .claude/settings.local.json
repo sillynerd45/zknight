@@ -19,7 +19,18 @@
       "Bash(node:*)",
       "Bash(grep:*)",
       "Bash(chmod:*)",
-      "Bash(npm run validate:*)"
+      "Bash(npm run validate:*)",
+      "Bash(ls:*)",
+      "Bash(bash -c '\n# Test the prerequisite check\nif ! command -v snarkjs &> /dev/null; then\n    echo \"\"Error: snarkjs not found\"\"\n    exit 1\nfi\n\nDOWNLOAD_CMD=\"\"\"\"\nif command -v wget &> /dev/null; then\n    DOWNLOAD_CMD=\"\"wget\"\"\nelif command -v curl &> /dev/null; then\n    DOWNLOAD_CMD=\"\"curl\"\"\nelse\n    echo \"\"Error: Neither wget nor curl found\"\"\n    exit 1\nfi\n\necho \"\"✓ Prerequisites check passed\"\"\necho \"\"✓ Using download tool: $DOWNLOAD_CMD\"\"\n')",
+      "Bash(curl:*)",
+      "Bash(npm run check:*)",
+      "Bash(wmic OS get:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process:*)",
+      "Bash(./node_modules/.bin/snarkjs:*)",
+      "Bash(bash run_test.sh)",
+      "Bash(cat:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

@@ -8,7 +8,12 @@
     "gen:all": "node gen_test_input.js && node gen_puzzle01_input.js && node gen_bad_input.js && node gen_crossing.js && node gen_wrong_tick_count.js && node gen_post_padding.js && node gen_barrel_collision.js",
     "gen:valid": "node gen_test_input.js && node gen_puzzle01_input.js",
     "gen:invalid": "node gen_bad_input.js && node gen_crossing.js && node gen_wrong_tick_count.js && node gen_post_padding.js && node gen_barrel_collision.js",
-    "test": "npm run validate"
+    "test": "npm run validate",
+    "setup": "bash setup_trusted.sh",
+    "check": "node check_setup.js",
+    "verify-setup": "bash verify_setup.sh",
+    "verify-zkey": "snarkjs zkey verify build/zknight.r1cs pot19_pp.ptau zknight_final.zkey",
+    "test-proof": "snarkjs groth16 fullprove test_input.json build/zknight_js/zknight.wasm zknight_final.zkey test_proof.json test_public.json && snarkjs groth16 verify vk.json test_public.json test_proof.json"
   },
   "keywords": [],
   "author": "",
