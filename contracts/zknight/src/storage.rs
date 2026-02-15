@@ -2,7 +2,7 @@
 
 use crate::errors::Error;
 use crate::types::{DataKey, Game, Puzzle};
-use soroban_sdk::Env;
+use soroban_sdk::{Address, Env};
 
 // ============================================================================
 // Storage TTL Management
@@ -45,6 +45,31 @@ pub fn increment_game_counter(env: &Env) -> u32 {
     let next = current + 1;
     env.storage().instance().set(&key, &next);
     next
+}
+
+// ============================================================================
+// Player Active Game Tracking
+// ============================================================================
+
+/// Get the active (WaitingForPlayer) game ID for a player, if any
+pub fn get_player_active_game(env: &Env, player: &Address) -> Option<u32> {
+    let key = DataKey::PlayerActiveGame(player.clone());
+    env.storage().temporary().get(&key)
+}
+
+/// Set the active game ID for a player
+pub fn set_player_active_game(env: &Env, player: &Address, game_id: u32) {
+    let key = DataKey::PlayerActiveGame(player.clone());
+    env.storage().temporary().set(&key, &game_id);
+    env.storage()
+        .temporary()
+        .extend_ttl(&key, GAME_TTL_LEDGERS, GAME_TTL_LEDGERS);
+}
+
+/// Remove the active game mapping for a player
+pub fn remove_player_active_game(env: &Env, player: &Address) {
+    let key = DataKey::PlayerActiveGame(player.clone());
+    env.storage().temporary().remove(&key);
 }
 
 // ============================================================================

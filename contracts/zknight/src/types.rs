@@ -44,6 +44,7 @@ pub enum GameStatus {
     Committing,        // >= 1 player has committed
     Finished,          // winner declared
     Cancelled,         // P1 cancelled before P2 joined
+    Expired,           // Game expired (>1 hour old, auto-cancelled)
 }
 
 #[contracttype]
@@ -79,6 +80,7 @@ pub enum DataKey {
     GameCounter,
     PuzzleCounter,
     PuzzleIndex(u32),      // maps index -> puzzle_id
+    PlayerActiveGame(Address), // maps player -> their WaitingForPlayer game_id
     GameHubAddress,
     Admin,
 }

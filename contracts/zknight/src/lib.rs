@@ -17,8 +17,9 @@ mod zk;
 use errors::Error;
 use soroban_sdk::{contract, contractclient, contractimpl, Address, Bytes, BytesN, Env, Vec, U256};
 use storage::{
-    get_game, get_puzzle, get_puzzle_by_index, get_puzzle_count, increment_game_counter,
-    increment_puzzle_counter, set_game, set_puzzle, set_puzzle_index,
+    get_game, get_player_active_game, get_puzzle, get_puzzle_by_index, get_puzzle_count,
+    increment_game_counter, increment_puzzle_counter, remove_player_active_game, set_game,
+    set_player_active_game, set_puzzle, set_puzzle_index,
 };
 use types::{DataKey, Game, GameStatus, Puzzle};
 use verification_key::VERIFICATION_KEY;
@@ -160,6 +161,11 @@ impl ZknightContract {
     pub fn create_game(env: Env, player1: Address) -> Result<u32, Error> {
         player1.require_auth();
 
+        // Check player doesn't already have an in-progress game
+        if get_player_active_game(&env, &player1).is_some() {
+            return Err(Error::AlreadyHasActiveGame);
+        }
+
         let game_id = increment_game_counter(&env);
         let game = Game {
             id: game_id,
@@ -181,6 +187,7 @@ impl ZknightContract {
         };
 
         set_game(&env, game_id, &game);
+        set_player_active_game(&env, &player1, game_id);
         Ok(game_id)
     }
 
@@ -208,6 +215,9 @@ impl ZknightContract {
         game.status = GameStatus::Cancelled;
         set_game(&env, game_id, &game);
 
+        // Release player1's active game lock
+        remove_player_active_game(&env, &player1);
+
         Ok(())
     }
 
@@ -227,9 +237,19 @@ impl ZknightContract {
     pub fn join_game(env: Env, game_id: u32, player2: Address) -> Result<Puzzle, Error> {
         player2.require_auth();
 
+        // Check player2 doesn't already have an in-progress game
+        if get_player_active_game(&env, &player2).is_some() {
+            return Err(Error::AlreadyHasActiveGame);
+        }
+
         let mut game = get_game(&env, game_id)?;
 
-        // Verify status
+        // Check for expired games first (more specific error)
+        if game.status == GameStatus::Expired {
+            return Err(Error::GameExpired);
+        }
+
+        // Verify status is WaitingForPlayer
         if game.status != GameStatus::WaitingForPlayer {
             return Err(Error::GameNotWaiting);
         }
@@ -237,12 +257,6 @@ impl ZknightContract {
         // Prevent self-play
         if game.player1 == player2 {
             return Err(Error::CannotPlayYourself);
-        }
-
-        // Check 1-hour expiry
-        let elapsed = env.ledger().timestamp() - game.created_at;
-        if elapsed > 3600 {
-            return Err(Error::GameExpired);
         }
 
         // Select puzzle at join time (neither player could predict this)
@@ -258,6 +272,9 @@ impl ZknightContract {
         game.puzzle_id = Some(puzzle.id);
         game.status = GameStatus::Active;
         set_game(&env, game_id, &game);
+
+        // Lock player2 into this game
+        set_player_active_game(&env, &player2, game_id);
 
         // Call Game Hub to start the game (no points for ZKnight)
         let game_hub_addr: Address = env
@@ -448,6 +465,12 @@ impl ZknightContract {
         game.status = GameStatus::Finished;
         set_game(&env, game_id, &game);
 
+        // Release both players' active game locks
+        remove_player_active_game(&env, &game.player1);
+        if let Some(ref p2) = game.player2 {
+            remove_player_active_game(&env, p2);
+        }
+
         // Report to Game Hub
         let game_hub_addr: Address = env
             .storage()
@@ -516,6 +539,12 @@ impl ZknightContract {
         game.status = GameStatus::Finished;
         set_game(&env, game_id, &game);
 
+        // Release both players' active game locks
+        remove_player_active_game(&env, &game.player1);
+        if let Some(ref p2) = game.player2 {
+            remove_player_active_game(&env, p2);
+        }
+
         // Report to Game Hub
         let player1_won = game.winner.as_ref() == Some(&game.player1);
         let game_hub_addr: Address = env
@@ -539,8 +568,11 @@ impl ZknightContract {
     }
 
     /// Get all open games (waiting for player 2)
-    pub fn get_open_games(env: Env) -> Vec<u32> {
-        let mut open_games = Vec::new(&env);
+    ///
+    /// Returns full Game objects so the frontend can display
+    /// player info, creation time, etc. without extra calls.
+    pub fn get_open_games(env: Env) -> Vec<Game> {
+        let mut open_games: Vec<Game> = Vec::new(&env);
         let game_count = env
             .storage()
             .instance()
@@ -550,7 +582,7 @@ impl ZknightContract {
         for game_id in 1..=game_count {
             if let Ok(game) = get_game(&env, game_id) {
                 if game.status == GameStatus::WaitingForPlayer {
-                    open_games.push_back(game_id);
+                    open_games.push_back(game.clone());
                 }
             }
         }
@@ -565,6 +597,60 @@ impl ZknightContract {
         } else {
             None
         }
+    }
+
+    /// Get the active WaitingForPlayer game ID for a player (if any)
+    ///
+    /// Returns the game ID if the player has a WaitingForPlayer game.
+    /// Returns None if the player has no active game, or if their active
+    /// game is already Active/Committing/Finished.
+    ///
+    /// Useful for frontend to check if player needs to cancel before creating.
+    pub fn get_player_active_game(env: Env, player: Address) -> Option<u32> {
+        if let Some(game_id) = get_player_active_game(&env, &player) {
+            // Check if the game is still WaitingForPlayer
+            if let Ok(game) = get_game(&env, game_id) {
+                if game.status == GameStatus::WaitingForPlayer {
+                    return Some(game_id);
+                }
+            }
+        }
+        None
+    }
+
+    /// Check if a WaitingForPlayer game has expired (>1 hour old) and auto-expire it
+    ///
+    /// If the game is WaitingForPlayer and more than 1 hour old:
+    /// - Sets status to Expired
+    /// - Releases player1's active game lock
+    /// - Returns true
+    ///
+    /// Otherwise returns false (game doesn't exist, not WaitingForPlayer, or not expired yet).
+    ///
+    /// This function can be called by anyone before attempting to join a game.
+    /// Frontend should call this before join_game() to clean up stale games.
+    pub fn check_and_expire_game(env: Env, game_id: u32) -> bool {
+        let mut game = match get_game(&env, game_id) {
+            Ok(g) => g,
+            Err(_) => return false,
+        };
+
+        // Only expire WaitingForPlayer games
+        if game.status != GameStatus::WaitingForPlayer {
+            return false;
+        }
+
+        // Check 1-hour expiry
+        let elapsed = env.ledger().timestamp() - game.created_at;
+        if elapsed > 3600 {
+            // Auto-expire the game and release player1's lock
+            game.status = GameStatus::Expired;
+            set_game(&env, game_id, &game);
+            remove_player_active_game(&env, &game.player1);
+            return true;
+        }
+
+        false
     }
 
     // ========================================================================

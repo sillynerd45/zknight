@@ -12,6 +12,7 @@ pub enum Error {
     WrongStatus = 3,
     CannotPlayYourself = 4,
     GameExpired = 5,
+    AlreadyHasActiveGame = 6,
 
     // Puzzle errors
     PuzzleNotFound = 10,
