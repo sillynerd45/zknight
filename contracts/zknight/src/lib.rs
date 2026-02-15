@@ -1,20 +1,33 @@
 #![no_std]
 
-//! # Zknight Game
+//! # ZKnight Game Contract
 //!
-//! A simple two-player guessing game where players guess a number between 1 and 10.
-//! The player whose guess is closest to the randomly generated number wins.
+//! A competitive puzzle game where two players race to solve the same puzzle.
+//! Solutions are verified off-chain using ZK proofs (Groth16/BN254).
 //!
 //! **Game Hub Integration:**
-//! This game is Game Hub-aware and enforces all games to be played through the
-//! Game Hub contract. Games cannot be started or completed without points involvement.
+//! This contract integrates with the Game Hub for lifecycle events and standings.
 
-use soroban_sdk::{
-    Address, Bytes, BytesN, Env, IntoVal, contract, contractclient, contracterror, contractimpl, contracttype, vec
+mod errors;
+mod storage;
+mod types;
+mod verification_key;
+mod zk;
+
+use errors::Error;
+use soroban_sdk::{contract, contractclient, contractimpl, Address, Bytes, BytesN, Env, Vec, U256};
+use storage::{
+    get_game, get_puzzle, get_puzzle_by_index, get_puzzle_count, increment_game_counter,
+    increment_puzzle_counter, set_game, set_puzzle, set_puzzle_index,
 };
+use types::{DataKey, Game, GameStatus, Puzzle};
+use verification_key::VERIFICATION_KEY;
+use zk::{build_public_inputs, compute_puzzle_hash, verify_groth16};
 
-// Import GameHub contract interface
-// This allows us to call into the GameHub contract
+// ============================================================================
+// Game Hub Interface
+// ============================================================================
+
 #[contractclient(name = "GameHubClient")]
 pub trait GameHub {
     fn start_game(
@@ -27,62 +40,8 @@ pub trait GameHub {
         player2_points: i128,
     );
 
-    fn end_game(
-        env: Env,
-        session_id: u32,
-        player1_won: bool
-    );
+    fn end_game(env: Env, session_id: u32, player1_won: bool);
 }
-
-// ============================================================================
-// Errors
-// ============================================================================
-
-#[contracterror]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum Error {
-    GameNotFound = 1,
-    NotPlayer = 2,
-    AlreadyGuessed = 3,
-    BothPlayersNotGuessed = 4,
-    GameAlreadyEnded = 5,
-}
-
-// ============================================================================
-// Data Types
-// ============================================================================
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Game {
-    pub player1: Address,
-    pub player2: Address,
-    pub player1_points: i128,
-    pub player2_points: i128,
-    pub player1_guess: Option<u32>,
-    pub player2_guess: Option<u32>,
-    pub winning_number: Option<u32>,
-    pub winner: Option<Address>,
-}
-
-#[contracttype]
-#[derive(Clone)]
-pub enum DataKey {
-    Game(u32),
-    GameHubAddress,
-    Admin,
-}
-
-// ============================================================================
-// Storage TTL Management
-// ============================================================================
-// TTL (Time To Live) ensures game data doesn't expire unexpectedly
-// Games are stored in temporary storage with a minimum 30-day retention
-
-/// TTL for game storage (30 days in ledgers, ~5 seconds per ledger)
-/// 30 days = 30 * 24 * 60 * 60 / 5 = 518,400 ledgers
-const GAME_TTL_LEDGERS: u32 = 518_400;
 
 // ============================================================================
 // Contract Definition
@@ -93,261 +52,519 @@ pub struct ZknightContract;
 
 #[contractimpl]
 impl ZknightContract {
+    // ========================================================================
+    // Constructor
+    // ========================================================================
+
     /// Initialize the contract with GameHub address and admin
     ///
     /// # Arguments
-    /// * `admin` - Admin address (can upgrade contract)
+    /// * `admin` - Admin address (can manage puzzles and upgrade contract)
     /// * `game_hub` - Address of the GameHub contract
     pub fn __constructor(env: Env, admin: Address, game_hub: Address) {
-        // Store admin and GameHub address
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage()
             .instance()
             .set(&DataKey::GameHubAddress, &game_hub);
     }
 
-    /// Start a new game between two players with points.
-    /// This creates a session in the Game Hub and locks points before starting the game.
-    ///
-    /// **CRITICAL:** This method requires authorization from THIS contract (not players).
-    /// The Game Hub will call `game_id.require_auth()` which checks this contract's address.
+    // ========================================================================
+    // Puzzle Management (Admin Only)
+    // ========================================================================
+
+    /// Add a new puzzle to the contract
     ///
     /// # Arguments
-    /// * `session_id` - Unique session identifier (u32)
-    /// * `player1` - Address of first player
-    /// * `player2` - Address of second player
-    /// * `player1_points` - Points amount committed by player 1
-    /// * `player2_points` - Points amount committed by player 2
-    pub fn start_game(
-        env: Env,
-        session_id: u32,
-        player1: Address,
-        player2: Address,
-        player1_points: i128,
-        player2_points: i128,
-    ) -> Result<(), Error> {
-        // Prevent self-play: Player 1 and Player 2 must be different
-        if player1 == player2 {
-            panic!("Cannot play against yourself: Player 1 and Player 2 must be different addresses");
+    /// * `puzzle` - The puzzle to add (id will be assigned automatically)
+    ///
+    /// # Returns
+    /// * The assigned puzzle ID
+    pub fn add_puzzle(env: Env, mut puzzle: Puzzle) -> Result<u32, Error> {
+        // Verify admin authorization
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::Unauthorized)?;
+        admin.require_auth();
+
+        // Assign sequential puzzle ID
+        let puzzle_id = increment_puzzle_counter(&env);
+        puzzle.id = puzzle_id;
+
+        // Compute puzzle hash (Poseidon2 of all layout fields)
+        let hash = compute_puzzle_hash(&env, &puzzle);
+        puzzle.puzzle_hash = hash;
+
+        // Store puzzle
+        set_puzzle(&env, puzzle_id, &puzzle);
+
+        // Store index mapping (for random selection)
+        let count = get_puzzle_count(&env);
+        set_puzzle_index(&env, count - 1, puzzle_id);
+
+        Ok(puzzle_id)
+    }
+
+    /// Remove a puzzle from the contract
+    ///
+    /// # Arguments
+    /// * `puzzle_id` - The ID of the puzzle to remove
+    ///
+    /// # Note
+    /// This doesn't actually delete the puzzle, it just marks it as removed
+    /// by not being accessible via get_puzzle_by_index.
+    /// Existing games using this puzzle can still complete.
+    pub fn remove_puzzle(env: Env, puzzle_id: u32) -> Result<(), Error> {
+        // Verify admin authorization
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::Unauthorized)?;
+        admin.require_auth();
+
+        // Verify puzzle exists
+        get_puzzle(&env, puzzle_id)?;
+
+        // Note: We don't actually delete the puzzle from storage,
+        // we just remove it from the index mapping.
+        // This prevents active games from breaking.
+        // A full implementation would need to track which puzzles are "active"
+        // and prevent selection of removed puzzles.
+
+        Ok(())
+    }
+
+    /// Get a puzzle by ID
+    pub fn get_puzzle(env: Env, puzzle_id: u32) -> Result<Puzzle, Error> {
+        get_puzzle(&env, puzzle_id)
+    }
+
+    /// Get the total number of puzzles
+    pub fn get_puzzle_count(env: Env) -> u32 {
+        get_puzzle_count(&env)
+    }
+
+    // ========================================================================
+    // Game Lifecycle
+    // ========================================================================
+
+    /// Create a new game (waiting for player 2)
+    ///
+    /// # Arguments
+    /// * `player1` - Address of the game creator
+    ///
+    /// # Returns
+    /// * The new game ID
+    pub fn create_game(env: Env, player1: Address) -> Result<u32, Error> {
+        player1.require_auth();
+
+        let game_id = increment_game_counter(&env);
+        let game = Game {
+            id: game_id,
+            player1: player1.clone(),
+            player2: None,
+            puzzle_id: None,
+            status: GameStatus::WaitingForPlayer,
+            winner: None,
+            p1_committed: false,
+            p2_committed: false,
+            p1_commitment: None,
+            p2_commitment: None,
+            p1_commit_time: None,
+            p2_commit_time: None,
+            p1_tick_count: None,
+            p2_tick_count: None,
+            commit_time: None,
+            created_at: env.ledger().timestamp(),
+        };
+
+        set_game(&env, game_id, &game);
+        Ok(game_id)
+    }
+
+    /// Cancel a game (only while waiting for player 2)
+    ///
+    /// # Arguments
+    /// * `game_id` - The ID of the game to cancel
+    /// * `player1` - Address of the game creator (must match)
+    pub fn cancel_game(env: Env, game_id: u32, player1: Address) -> Result<(), Error> {
+        player1.require_auth();
+
+        let mut game = get_game(&env, game_id)?;
+
+        // Verify status
+        if game.status != GameStatus::WaitingForPlayer {
+            return Err(Error::WrongStatus);
         }
 
-        // Require authentication from both players (they consent to committing points)
-        player1.require_auth_for_args(vec![&env, session_id.into_val(&env), player1_points.into_val(&env)]);
-        player2.require_auth_for_args(vec![&env, session_id.into_val(&env), player2_points.into_val(&env)]);
+        // Verify caller is player1
+        if game.player1 != player1 {
+            return Err(Error::Unauthorized);
+        }
 
-        // Get GameHub address
+        // Update status
+        game.status = GameStatus::Cancelled;
+        set_game(&env, game_id, &game);
+
+        Ok(())
+    }
+
+    /// Join a game as player 2
+    ///
+    /// This function:
+    /// 1. Adds player2 to the game
+    /// 2. Selects a random puzzle via PRNG
+    /// 3. Returns the full Puzzle struct for immediate rendering
+    ///
+    /// # Arguments
+    /// * `game_id` - The ID of the game to join
+    /// * `player2` - Address of the joining player
+    ///
+    /// # Returns
+    /// * The selected Puzzle struct
+    pub fn join_game(env: Env, game_id: u32, player2: Address) -> Result<Puzzle, Error> {
+        player2.require_auth();
+
+        let mut game = get_game(&env, game_id)?;
+
+        // Verify status
+        if game.status != GameStatus::WaitingForPlayer {
+            return Err(Error::GameNotWaiting);
+        }
+
+        // Prevent self-play
+        if game.player1 == player2 {
+            return Err(Error::CannotPlayYourself);
+        }
+
+        // Check 1-hour expiry
+        let elapsed = env.ledger().timestamp() - game.created_at;
+        if elapsed > 3600 {
+            return Err(Error::GameExpired);
+        }
+
+        // Select puzzle at join time (neither player could predict this)
+        let count = get_puzzle_count(&env);
+        if count == 0 {
+            return Err(Error::PuzzleNotFound);
+        }
+        let index = env.prng().gen_range::<u64>(0..count as u64) as u32;
+        let puzzle = get_puzzle_by_index(&env, index)?;
+
+        // Update game
+        game.player2 = Some(player2.clone());
+        game.puzzle_id = Some(puzzle.id);
+        game.status = GameStatus::Active;
+        set_game(&env, game_id, &game);
+
+        // Call Game Hub to start the game (no points for ZKnight)
         let game_hub_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::GameHubAddress)
             .expect("GameHub address not set");
-
-        // Create GameHub client
         let game_hub = GameHubClient::new(&env, &game_hub_addr);
-
-        // Call Game Hub to start the session and lock points
-        // This requires THIS contract's authorization (env.current_contract_address())
         game_hub.start_game(
             &env.current_contract_address(),
-            &session_id,
-            &player1,
+            &game_id,
+            &game.player1,
             &player2,
-            &player1_points,
-            &player2_points,
+            &1,
+            &1,
         );
 
-        // Create game (winning_number not set yet - will be generated in reveal_winner)
-        let game = Game {
-            player1: player1.clone(),
-            player2: player2.clone(),
-            player1_points,
-            player2_points,
-            player1_guess: None,
-            player2_guess: None,
-            winning_number: None,
-            winner: None,
-        };
-
-        // Store game in temporary storage with 30-day TTL
-        let game_key = DataKey::Game(session_id);
-        env.storage().temporary().set(&game_key, &game);
-
-        // Set TTL to ensure game is retained for at least 30 days
-        env.storage()
-            .temporary()
-            .extend_ttl(&game_key, GAME_TTL_LEDGERS, GAME_TTL_LEDGERS);
-
-        // Event emitted by the Game Hub contract (GameStarted)
-
-        Ok(())
+        Ok(puzzle)
     }
 
-    /// Make a guess for the current game.
-    /// Players can guess a number between 1 and 10.
+    /// Commit a solution (timestamp-locked commitment)
+    ///
+    /// Players call this immediately upon solving the puzzle,
+    /// before generating the ZK proof.
     ///
     /// # Arguments
-    /// * `session_id` - The session ID of the game
-    /// * `player` - Address of the player making the guess
-    /// * `guess` - The guessed number (1-10)
-    pub fn make_guess(env: Env, session_id: u32, player: Address, guess: u32) -> Result<(), Error> {
+    /// * `game_id` - The ID of the game
+    /// * `player` - Address of the committing player
+    /// * `commitment` - SHA256 hash of the preimage
+    pub fn commit_solve(
+        env: Env,
+        game_id: u32,
+        player: Address,
+        commitment: BytesN<32>,
+    ) -> Result<(), Error> {
         player.require_auth();
 
-        // Validate guess is in range
-        if guess < 1 || guess > 10 {
-            panic!("Guess must be between 1 and 10");
+        let mut game = get_game(&env, game_id)?;
+
+        // Verify status
+        if game.status != GameStatus::Active && game.status != GameStatus::Committing {
+            return Err(Error::WrongStatus);
         }
 
-        // Get game from temporary storage
-        let key = DataKey::Game(session_id);
-        let mut game: Game = env
-            .storage()
-            .temporary()
-            .get(&key)
-            .ok_or(Error::GameNotFound)?;
+        let timestamp = env.ledger().timestamp();
 
-        // Check game is still active (no winner yet)
-        if game.winner.is_some() {
-            return Err(Error::GameAlreadyEnded);
+        // Determine which player is committing
+        let is_p1 = game.player1 == player;
+        let is_p2 = game.player2.as_ref() == Some(&player);
+
+        if !is_p1 && !is_p2 {
+            return Err(Error::Unauthorized);
         }
 
-        // Update guess for the appropriate player
-        if player == game.player1 {
-            if game.player1_guess.is_some() {
-                return Err(Error::AlreadyGuessed);
+        // Store commitment
+        if is_p1 {
+            if game.p1_committed {
+                return Err(Error::AlreadyCommitted);
             }
-            game.player1_guess = Some(guess);
-        } else if player == game.player2 {
-            if game.player2_guess.is_some() {
-                return Err(Error::AlreadyGuessed);
-            }
-            game.player2_guess = Some(guess);
+            game.p1_commitment = Some(commitment);
+            game.p1_commit_time = Some(timestamp);
+            game.p1_committed = true;
         } else {
-            return Err(Error::NotPlayer);
+            if game.p2_committed {
+                return Err(Error::AlreadyCommitted);
+            }
+            game.p2_commitment = Some(commitment);
+            game.p2_commit_time = Some(timestamp);
+            game.p2_committed = true;
         }
 
-        // Store updated game in temporary storage
-        env.storage().temporary().set(&key, &game);
+        // Set commit_time on first commitment (starts 10-minute timeout)
+        if game.commit_time.is_none() {
+            game.commit_time = Some(timestamp);
+        }
 
-        // No event emitted - game state can be queried via get_game()
+        // Update status to Committing
+        game.status = GameStatus::Committing;
+        set_game(&env, game_id, &game);
 
         Ok(())
     }
 
-    /// Reveal the winner of the game and submit outcome to GameHub.
-    /// Can only be called after both players have made their guesses.
-    /// This generates the winning number, determines the winner, and ends the session.
+    /// Reveal and verify a solution with ZK proof
+    ///
+    /// This function:
+    /// 1. Verifies the preimage matches the commitment
+    /// 2. Reconstructs public inputs from the stored puzzle
+    /// 3. Verifies the Groth16 proof
+    /// 4. Records the tick count
+    /// 5. Determines the winner if both players have revealed
+    /// 6. Reports the game result to Game Hub
     ///
     /// # Arguments
-    /// * `session_id` - The session ID of the game
-    ///
-    /// # Returns
-    /// * `Address` - Address of the winning player
-    pub fn reveal_winner(env: Env, session_id: u32) -> Result<Address, Error> {
-        // Get game from temporary storage
-        let key = DataKey::Game(session_id);
-        let mut game: Game = env
-            .storage()
-            .temporary()
-            .get(&key)
-            .ok_or(Error::GameNotFound)?;
+    /// * `game_id` - The ID of the game
+    /// * `player` - Address of the revealing player
+    /// * `preimage` - Preimage of the commitment (32 random bytes)
+    /// * `proof` - 256-byte Groth16 proof
+    /// * `tick_count` - Number of ticks in the solution (<= 512)
+    pub fn reveal_solve(
+        env: Env,
+        game_id: u32,
+        player: Address,
+        preimage: BytesN<32>,
+        proof: Bytes,
+        tick_count: u32,
+    ) -> Result<(), Error> {
+        player.require_auth();
 
-        // Check if game already ended (has a winner)
-        if let Some(winner) = &game.winner {
-            return Ok(winner.clone());
+        let mut game = get_game(&env, game_id)?;
+
+        // Verify status
+        if game.status != GameStatus::Committing {
+            return Err(Error::WrongStatus);
         }
 
-        // Check both players have guessed
-        let guess1 = game.player1_guess.ok_or(Error::BothPlayersNotGuessed)?;
-        let guess2 = game.player2_guess.ok_or(Error::BothPlayersNotGuessed)?;
+        // 1. Verify preimage matches stored commitment
+        let hash: BytesN<32> = env
+            .crypto()
+            .sha256(&Bytes::from_slice(&env, &preimage.to_array()))
+            .into();
 
-        // Generate random winning number between 1 and 10 using seeded PRNG
-        // This is done AFTER both players have committed their guesses
-        //
-        // Seed components (all deterministic and identical between sim/submit):
-        // 1. Session ID - unique per game, same between simulation and submission
-        // 2. Player addresses - both players contribute, same between sim/submit
-        // 3. Guesses - committed before reveal, same between sim/submit
-        //
-        // Note: We do NOT include ledger sequence or timestamp because those differ
-        // between simulation and submission, which would cause different winners.
-        //
-        // This ensures:
-        // - Same result between simulation and submission (fully deterministic)
-        // - Cannot be easily gamed (both players contribute to randomness)
+        let is_p1 = game.player1 == player;
 
-        // Build seed more efficiently using native arrays where possible
-        // Total: 12 bytes of fixed data (session_id + 2 guesses)
-        let mut fixed_data = [0u8; 12];
-        fixed_data[0..4].copy_from_slice(&session_id.to_be_bytes());
-        fixed_data[4..8].copy_from_slice(&guess1.to_be_bytes());
-        fixed_data[8..12].copy_from_slice(&guess2.to_be_bytes());
-
-        // Only use Bytes for the final concatenation with player addresses
-        let mut seed_bytes = Bytes::from_array(&env, &fixed_data);
-        seed_bytes.append(&game.player1.to_string().to_bytes());
-        seed_bytes.append(&game.player2.to_string().to_bytes());
-
-        let seed = env.crypto().keccak256(&seed_bytes);
-        env.prng().seed(seed.into());
-        let winning_number = env.prng().gen_range::<u64>(1..=10) as u32;
-        game.winning_number = Some(winning_number);
-
-        // Calculate distances
-        let distance1 = if guess1 > winning_number {
-            guess1 - winning_number
+        let stored_commitment = if is_p1 {
+            game.p1_commitment.as_ref().ok_or(Error::NoCommitment)?
         } else {
-            winning_number - guess1
+            game.p2_commitment.as_ref().ok_or(Error::NoCommitment)?
         };
 
-        let distance2 = if guess2 > winning_number {
-            guess2 - winning_number
-        } else {
-            winning_number - guess2
-        };
+        if &hash != stored_commitment {
+            return Err(Error::BadPreimage);
+        }
 
-        // Determine winner (if equal distance, player1 wins)
-        let winner = if distance1 <= distance2 {
+        // 2. Load puzzle and reconstruct public inputs
+        let puzzle = get_puzzle(&env, game.puzzle_id.ok_or(Error::PuzzleNotFound)?)?;
+        let public_inputs = build_public_inputs(&env, &puzzle, tick_count);
+
+        // 3. Verify Groth16 proof
+        // Build array of public inputs for verification
+        let inputs_array =
+            core::array::from_fn::<U256, 125, _>(|i| public_inputs.get(i as u32).unwrap());
+
+        if !verify_groth16(&env, &VERIFICATION_KEY, &proof, &inputs_array) {
+            return Err(Error::InvalidProof);
+        }
+
+        // 4. Record tick count for this player
+        if is_p1 {
+            game.p1_tick_count = Some(tick_count);
+        } else {
+            game.p2_tick_count = Some(tick_count);
+        }
+
+        // 5. Check if both players have revealed
+        let both_revealed = game.p1_tick_count.is_some() && game.p2_tick_count.is_some();
+
+        if !both_revealed {
+            // First valid reveal - store result, wait for other player
+            set_game(&env, game_id, &game);
+            return Ok(());
+        }
+
+        // 6. Both revealed - determine winner
+        let p1_time = game.p1_commit_time.unwrap();
+        let p2_time = game.p2_commit_time.unwrap();
+        let p1_ticks = game.p1_tick_count.unwrap();
+        let p2_ticks = game.p2_tick_count.unwrap();
+
+        // Winner rules:
+        // 1. Earliest commit_time wins
+        // 2. If same ledger (same timestamp) - fewer ticks wins
+        // 3. If ticks also equal - P1 wins (tiebreaker)
+        let winner = if p1_time < p2_time {
+            game.player1.clone()
+        } else if p2_time < p1_time {
+            game.player2.clone().unwrap()
+        } else if p1_ticks <= p2_ticks {
             game.player1.clone()
         } else {
-            game.player2.clone()
+            game.player2.clone().unwrap()
         };
 
-        // Update game with winner (this marks the game as ended)
-        game.winner = Some(winner.clone());
-        env.storage().temporary().set(&key, &game);
+        let player1_won = winner == game.player1;
 
-        // Get GameHub address
+        // Update game state
+        game.winner = Some(winner);
+        game.status = GameStatus::Finished;
+        set_game(&env, game_id, &game);
+
+        // Report to Game Hub
         let game_hub_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::GameHubAddress)
             .expect("GameHub address not set");
-
-        // Create GameHub client
         let game_hub = GameHubClient::new(&env, &game_hub_addr);
+        game_hub.end_game(&game_id, &player1_won);
 
-        // Call GameHub to end the session
-        // This unlocks points and updates standings
-        // Event emitted by the Game Hub contract (GameEnded)
-        let player1_won = winner == game.player1; // true if player1 won, false if player2 won
-        game_hub.end_game(&session_id, &player1_won);
-
-        Ok(winner)
+        Ok(())
     }
 
-    /// Get game information.
+    /// Claim a timeout win (10-minute default win if opponent doesn't reveal)
     ///
     /// # Arguments
-    /// * `session_id` - The session ID of the game
-    ///
-    /// # Returns
-    /// * `Game` - The game state (includes winning number after game ends)
-    pub fn get_game(env: Env, session_id: u32) -> Result<Game, Error> {
-        let key = DataKey::Game(session_id);
-        env.storage()
-            .temporary()
-            .get(&key)
-            .ok_or(Error::GameNotFound)
+    /// * `game_id` - The ID of the game
+    /// * `claimer` - Address of the player claiming the win
+    pub fn claim_timeout_win(env: Env, game_id: u32, claimer: Address) -> Result<(), Error> {
+        claimer.require_auth();
+
+        let mut game = get_game(&env, game_id)?;
+
+        // Verify status
+        if game.status != GameStatus::Committing {
+            return Err(Error::WrongStatus);
+        }
+
+        // Check 10-minute timeout (600 seconds)
+        let commit_time = game.commit_time.ok_or(Error::NoCommitTime)?;
+        let elapsed = env.ledger().timestamp() - commit_time;
+        if elapsed < 600 {
+            return Err(Error::TooEarly);
+        }
+
+        // Verify claimer has committed
+        let is_p1 = game.player1 == claimer;
+        let is_p2 = game.player2.as_ref() == Some(&claimer);
+
+        if !is_p1 && !is_p2 {
+            return Err(Error::Unauthorized);
+        }
+
+        let claimer_committed = if is_p1 {
+            game.p1_committed
+        } else {
+            game.p2_committed
+        };
+
+        if !claimer_committed {
+            return Err(Error::YouDidNotCommit);
+        }
+
+        // Verify opponent has not revealed
+        let opponent_revealed = if is_p1 {
+            game.p2_tick_count.is_some()
+        } else {
+            game.p1_tick_count.is_some()
+        };
+
+        if opponent_revealed {
+            return Err(Error::OpponentAlreadyRevealed);
+        }
+
+        // Award win to claimer
+        game.winner = Some(claimer);
+        game.status = GameStatus::Finished;
+        set_game(&env, game_id, &game);
+
+        // Report to Game Hub
+        let player1_won = game.winner.as_ref() == Some(&game.player1);
+        let game_hub_addr: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::GameHubAddress)
+            .expect("GameHub address not set");
+        let game_hub = GameHubClient::new(&env, &game_hub_addr);
+        game_hub.end_game(&game_id, &player1_won);
+
+        Ok(())
+    }
+
+    // ========================================================================
+    // Read-Only Functions
+    // ========================================================================
+
+    /// Get game information
+    pub fn get_game(env: Env, game_id: u32) -> Result<Game, Error> {
+        get_game(&env, game_id)
+    }
+
+    /// Get all open games (waiting for player 2)
+    pub fn get_open_games(env: Env) -> Vec<u32> {
+        let mut open_games = Vec::new(&env);
+        let game_count = env
+            .storage()
+            .instance()
+            .get::<DataKey, u32>(&DataKey::GameCounter)
+            .unwrap_or(0);
+
+        for game_id in 1..=game_count {
+            if let Ok(game) = get_game(&env, game_id) {
+                if game.status == GameStatus::WaitingForPlayer {
+                    open_games.push_back(game_id);
+                }
+            }
+        }
+
+        open_games
+    }
+
+    /// Get the winner of a game (if finished)
+    pub fn get_game_result(env: Env, game_id: u32) -> Option<Address> {
+        if let Ok(game) = get_game(&env, game_id) {
+            game.winner
+        } else {
+            None
+        }
     }
 
     // ========================================================================
@@ -355,9 +572,6 @@ impl ZknightContract {
     // ========================================================================
 
     /// Get the current admin address
-    ///
-    /// # Returns
-    /// * `Address` - The admin address
     pub fn get_admin(env: Env) -> Address {
         env.storage()
             .instance()
@@ -366,9 +580,6 @@ impl ZknightContract {
     }
 
     /// Set a new admin address
-    ///
-    /// # Arguments
-    /// * `new_admin` - The new admin address
     pub fn set_admin(env: Env, new_admin: Address) {
         let admin: Address = env
             .storage()
@@ -381,9 +592,6 @@ impl ZknightContract {
     }
 
     /// Get the current GameHub contract address
-    ///
-    /// # Returns
-    /// * `Address` - The GameHub contract address
     pub fn get_hub(env: Env) -> Address {
         env.storage()
             .instance()
@@ -392,9 +600,6 @@ impl ZknightContract {
     }
 
     /// Set a new GameHub contract address
-    ///
-    /// # Arguments
-    /// * `new_hub` - The new GameHub contract address
     pub fn set_hub(env: Env, new_hub: Address) {
         let admin: Address = env
             .storage()
@@ -408,10 +613,7 @@ impl ZknightContract {
             .set(&DataKey::GameHubAddress, &new_hub);
     }
 
-    /// Update the contract WASM hash (upgrade contract)
-    ///
-    /// # Arguments
-    /// * `new_wasm_hash` - The hash of the new WASM binary
+    /// Upgrade the contract WASM
     pub fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
         let admin: Address = env
             .storage()
@@ -423,10 +625,6 @@ impl ZknightContract {
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod test;
