@@ -1,10 +1,14 @@
 {
   "name": "zk",
   "version": "1.0.0",
-  "description": "",
+  "description": "ZKnight circuit validation and testing",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "validate": "node validate.js",
+    "gen:all": "node gen_test_input.js && node gen_puzzle01_input.js && node gen_bad_input.js && node gen_crossing.js && node gen_wrong_tick_count.js && node gen_post_padding.js && node gen_barrel_collision.js",
+    "gen:valid": "node gen_test_input.js && node gen_puzzle01_input.js",
+    "gen:invalid": "node gen_bad_input.js && node gen_crossing.js && node gen_wrong_tick_count.js && node gen_post_padding.js && node gen_barrel_collision.js",
+    "test": "npm run validate"
   },
   "keywords": [],
   "author": "",

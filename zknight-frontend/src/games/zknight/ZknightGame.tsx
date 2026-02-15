@@ -7,7 +7,8 @@ import { MoveCounter } from '@/components/MoveCounter';
 import { RaceTimer } from '@/components/RaceTimer';
 import { WinOverlay, ExplosionOverlay } from '@/components/GameOverlays';
 // CycleNotice removed - cycle detection disabled
-import puzzle01 from '@/puzzles/puzzle_01';
+import { PUZZLES } from '@/puzzles';
+import type { Puzzle } from '@/game/types';
 import { EditorSelector, BackgroundEditor, PuzzleEditor } from '@/editor';
 
 type GameView = 'lobby' | 'game' | 'editor';
@@ -105,6 +106,7 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
 export function ZknightGame() {
   const [view, setView] = useState<GameView>('lobby');
   const [editorSubView, setEditorSubView] = useState<'background' | 'puzzle' | null>(null);
+  const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle>(PUZZLES[0]);
 
   const handleLeaveEditor = useCallback(() => {
     setEditorSubView(null);
@@ -119,25 +121,57 @@ export function ZknightGame() {
           <p style={{ color: '#666', marginTop: '0.5rem' }}>
             Matchmaking will be implemented in a later step.
           </p>
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-            <button onClick={() => setView('game')}>
-              Start Game (placeholder)
-            </button>
-            {import.meta.env.DEV && (
-              <button
-                onClick={() => { setEditorSubView(null); setView('editor'); }}
-                style={{ background: '#666', color: '#fff', border: '1px solid #444' }}
+          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="puzzle-select" style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                Select Puzzle:
+              </label>
+              <select
+                id="puzzle-select"
+                value={selectedPuzzle.id}
+                onChange={(e) => {
+                  const puzzle = PUZZLES.find(p => p.id === e.target.value);
+                  if (puzzle) setSelectedPuzzle(puzzle);
+                }}
+                style={{
+                  padding: '0.5rem',
+                  fontSize: '1rem',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                }}
               >
-                Dev Editors
+                {PUZZLES.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.id})
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.85rem', color: '#888', margin: 0 }}>
+                {selectedPuzzle.movingTNT.length > 0
+                  ? `⚠️ Has ${selectedPuzzle.movingTNT.length} moving barrel(s)`
+                  : '✓ No moving barrels'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => setView('game')}>
+                Start Game
               </button>
-            )}
+              {import.meta.env.DEV && (
+                <button
+                  onClick={() => { setEditorSubView(null); setView('editor'); }}
+                  style={{ background: '#666', color: '#fff', border: '1px solid #444' }}
+                >
+                  Dev Editors
+                </button>
+              )}
+            </div>
           </div>
         </div>
       );
 
     case 'game':
       return (
-        <GameProvider puzzle={puzzle01}>
+        <GameProvider puzzle={selectedPuzzle}>
           <GamePlayView onBack={() => setView('lobby')} />
         </GameProvider>
       );
