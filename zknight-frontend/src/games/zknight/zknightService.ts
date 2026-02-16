@@ -187,7 +187,12 @@ export class ZknightService {
         throw new Error(`Failed to create game: ${errorMessage}`);
       }
 
-      return sentTx.result;
+      // Unwrap the Result wrapper (returns {value: number} instead of number)
+      const gameId = sentTx.result;
+      if (gameId && typeof gameId === 'object' && 'value' in gameId) {
+        return (gameId as any).value as number;
+      }
+      return gameId;
     } catch (err) {
       if (err instanceof Error && err.message.includes('AlreadyHasActiveGame')) {
         throw new Error('You already have an active game. Cancel it or wait for it to finish.');
@@ -259,7 +264,12 @@ export class ZknightService {
         return false;
       }
 
-      return sentTx.result || false;
+      // Unwrap the Result wrapper for boolean values
+      const result = sentTx.result;
+      if (result && typeof result === 'object' && 'value' in result) {
+        return (result as any).value as boolean;
+      }
+      return result || false;
     } catch (err) {
       console.log('[checkAndExpireGame] Error checking expiry:', err);
       return false;
