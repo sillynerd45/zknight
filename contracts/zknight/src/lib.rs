@@ -259,12 +259,13 @@ impl ZknightContract {
             return Err(Error::CannotPlayYourself);
         }
 
-        // Select puzzle at join time (neither player could predict this)
+        // Select puzzle deterministically based on game_id
+        // This ensures the SDK can predict the footprint at simulation time
         let count = get_puzzle_count(&env);
         if count == 0 {
             return Err(Error::PuzzleNotFound);
         }
-        let index = env.prng().gen_range::<u64>(0..count as u64) as u32;
+        let index = (game_id % count) as u32;
         let puzzle = get_puzzle_by_index(&env, index)?;
 
         // Update game
@@ -414,7 +415,7 @@ impl ZknightContract {
         let public_inputs = build_public_inputs(&env, &puzzle, tick_count);
 
         // 3. Verify Groth16 proof
-        // Build array of public inputs for verification
+        // Build array of public inputs for verification (125 = 3 outputs + 122 inputs)
         let inputs_array =
             core::array::from_fn::<U256, 125, _>(|i| public_inputs.get(i as u32).unwrap());
 

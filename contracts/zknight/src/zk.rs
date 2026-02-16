@@ -61,27 +61,40 @@ pub fn verify_groth16(env: &Env, vk: &VerificationKeys, proof: &Bytes, inputs: &
     bn254.pairing_check(g1, g2)
 }
 
-/// Build public inputs array for the ZK circuit
+/// Build public signals array for Groth16 verification
 ///
-/// This reconstructs the exact same public input array that the circuit expects.
-/// Order must match the Circom signal declarations.
+/// Circom public signal order: outputs first, then inputs.
+/// Must match exactly what snarkjs produces in publicSignals[].
 ///
-/// # Public Input Order (125 total):
-/// 1. grid_width (1)
-/// 2. grid_height (1)
-/// 3. knight_a_start (2: x, y)
-/// 4. knight_b_start (2: x, y)
-/// 5. walls (32: 16 positions × 2 coords, padded with {11, 7})
-/// 6. static_tnt (16: 8 positions × 2 coords, padded with {11, 7})
-/// 7. barrel_paths (64: 2 barrels × 16 steps × 2 coords, padded with {11, 7})
-/// 8. barrel_path_lengths (2: lengths for 2 barrels)
-/// 9. tick_count (1)
-/// 10. puzzle_id (1)
+/// # Public Signal Order (125 total):
 ///
-/// Total: 1 + 1 + 2 + 2 + 32 + 16 + 64 + 2 + 1 + 1 + 3 = 125
+/// ## Outputs (3):
+/// 0. out_puzzle_id (= puzzle_id)
+/// 1. out_tick_count (= tick_count)
+/// 2. out_win (= 1, always true for valid proof)
+///
+/// ## Inputs (122):
+/// 3. grid_width (1)
+/// 4. grid_height (1)
+/// 5-6. knight_a_start (2: x, y)
+/// 7-8. knight_b_start (2: x, y)
+/// 9-40. walls (32: 16 positions × 2 coords, padded with {11, 7})
+/// 41-56. static_tnt (16: 8 positions × 2 coords, padded with {11, 7})
+/// 57-120. barrel_paths (64: 2 barrels × 16 steps × 2 coords, padded with {11, 7})
+/// 121-122. barrel_path_lengths (2: lengths for 2 barrels)
+/// 123. tick_count (1)
+/// 124. puzzle_id (1)
+///
+/// Total: 3 + 122 = 125
 pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U256> {
     let mut inputs = Vec::new(env);
 
+    // Circuit outputs (first 3 public signals in Circom convention)
+    inputs.push_back(U256::from_u32(env, puzzle.id));       // out_puzzle_id
+    inputs.push_back(U256::from_u32(env, tick_count));       // out_tick_count
+    inputs.push_back(U256::from_u32(env, 1));                // out_win (always 1)
+
+    // Circuit inputs (122 signals)
     // 1. Grid dimensions
     inputs.push_back(U256::from_u32(env, puzzle.grid_width));
     inputs.push_back(U256::from_u32(env, puzzle.grid_height));
@@ -136,11 +149,13 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
     }
 
     // 6. Barrel path lengths
+    // Non-existent barrels use length 1 (not 0) to match circuit/frontend convention
+    // (avoids division by zero in circuit modular arithmetic)
     for b in 0..2 {
         if let Some(barrel) = puzzle.moving_barrels.get(b) {
             inputs.push_back(U256::from_u32(env, barrel.path_length));
         } else {
-            inputs.push_back(U256::from_u32(env, 0));
+            inputs.push_back(U256::from_u32(env, 1));
         }
     }
 

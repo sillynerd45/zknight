@@ -28,14 +28,15 @@ function g1ToBytes(point) {
 
 // Convert G2 affine point to 128 bytes
 // G2 has 2 Fp2 elements (x, y), each Fp2 has 2 Fp elements (c0, c1)
-// Format: [x_c0, x_c1], [y_c0, y_c1]
-// We need: x_c0 (32) + x_c1 (32) + y_c0 (32) + y_c1 (32) = 128 bytes
+// snarkjs format: [x_c0, x_c1], [y_c0, y_c1]
+// Soroban/EIP-197 format: x_c1 | x_c0 | y_c1 | y_c0 (c0/c1 swapped)
 function g2ToBytes(point) {
   const x_c0 = toBigEndianBytes(point[0][0]);
   const x_c1 = toBigEndianBytes(point[0][1]);
   const y_c0 = toBigEndianBytes(point[1][0]);
   const y_c1 = toBigEndianBytes(point[1][1]);
-  return [...x_c0, ...x_c1, ...y_c0, ...y_c1];
+  // Swap c0/c1 within each coordinate for Soroban SDK
+  return [...x_c1, ...x_c0, ...y_c1, ...y_c0];
 }
 
 // Format byte array as Rust code

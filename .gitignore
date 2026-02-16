@@ -49,3 +49,4 @@ zk/bad_*.json
 *.r1cs
 *.sym
 *.zkey
+zk/*_output.txt

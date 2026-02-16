@@ -35,7 +35,11 @@
       "Bash(rustup target add:*)",
       "Bash(cargo test:*)",
       "Bash(stellar:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(while read key:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(for:*)"
     ]
   }
 }

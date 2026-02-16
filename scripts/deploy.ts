@@ -191,18 +191,20 @@ for (const contract of allContracts) {
   if (envId) existingContractIds[contract.packageName] = envId;
 }
 
-// Handle admin identity (needs to be in Stellar CLI for deployment)
+// Handle admin identity (use zknight-admin from stellar keys)
 console.log('Setting up admin identity...');
-console.log('📝 Generating new admin identity...');
-const adminKeypair = Keypair.random();
-
-walletAddresses.admin = adminKeypair.publicKey();
-
 try {
-  await ensureTestnetFunded(walletAddresses.admin);
-  console.log('✅ admin funded');
+  // Get zknight-admin address
+  const adminAddress = (await $`stellar keys address zknight-admin`.text()).trim();
+  walletAddresses.admin = adminAddress;
+  console.log(`✅ Using zknight-admin: ${adminAddress}`);
+
+  // Ensure it's funded
+  await ensureTestnetFunded(adminAddress);
+  console.log('✅ zknight-admin funded');
 } catch (error) {
-  console.error('❌ Failed to ensure admin is funded. Deployment cannot proceed.');
+  console.error('❌ zknight-admin identity not found.');
+  console.error('   Create it with: stellar keys generate zknight-admin --network testnet');
   process.exit(1);
 }
 
@@ -240,9 +242,9 @@ console.log(`  Admin:   ${walletAddresses.admin}`);
 console.log(`  Player1: ${walletAddresses.player1}`);
 console.log(`  Player2: ${walletAddresses.player2}\n`);
 
-// Use admin secret for contract deployment
+// Use zknight-admin identity for contract deployment
 const adminAddress = walletAddresses.admin;
-const adminSecret = adminKeypair.secret();
+const adminIdentity = "zknight-admin";
 
 const deployed: Record<string, string> = { ...existingContractIds };
 
@@ -277,7 +279,7 @@ if (shouldEnsureMock) {
     console.log(`Deploying ${mock.packageName}...`);
     try {
       const result =
-        await $`stellar contract deploy --wasm ${mock.wasmPath} --source-account ${adminSecret} --network ${NETWORK}`.text();
+        await $`stellar contract deploy --wasm ${mock.wasmPath} --source ${adminIdentity} --network ${NETWORK}`.text();
       mockGameHubId = result.trim();
       deployed[mock.packageName] = mockGameHubId;
       console.log(`✅ ${mock.packageName} deployed: ${mockGameHubId}\n`);
@@ -295,13 +297,13 @@ for (const contract of contracts) {
   try {
     console.log("  Installing WASM...");
     const installResult =
-      await $`stellar contract install --wasm ${contract.wasmPath} --source-account ${adminSecret} --network ${NETWORK}`.text();
+      await $`stellar contract install --wasm ${contract.wasmPath} --source ${adminIdentity} --network ${NETWORK}`.text();
     const wasmHash = installResult.trim();
     console.log(`  WASM hash: ${wasmHash}`);
 
     console.log("  Deploying and initializing...");
     const deployResult =
-      await $`stellar contract deploy --wasm-hash ${wasmHash} --source-account ${adminSecret} --network ${NETWORK} -- --admin ${adminAddress} --game-hub ${mockGameHubId}`.text();
+      await $`stellar contract deploy --wasm-hash ${wasmHash} --source ${adminIdentity} --network ${NETWORK} -- --admin ${adminAddress} --game-hub ${mockGameHubId}`.text();
     const contractId = deployResult.trim();
     deployed[contract.packageName] = contractId;
     console.log(`✅ ${contract.packageName} deployed: ${contractId}\n`);
