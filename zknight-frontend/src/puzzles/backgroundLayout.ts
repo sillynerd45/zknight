@@ -19,6 +19,18 @@ export const BUSH_POSITIONS: Position[] = [
     {x: 1, y: 7},
 ];
 
+export const SHORT_TREE_1_POSITIONS: Position[] = [];
+
+export const SHORT_TREE_2_POSITIONS: Position[] = [];
+
+export const WATER_FOAM_POSITIONS: Position[] = [];
+
+/** Cells in the 15×11 BG grid where the ground tile is removed (water shows through). */
+export const GROUND_TILE_REMOVED: Position[] = [];
+
+/** Cells with a non-default tile variant. col/row are 0-indexed from ground_tile_map.png. */
+export const GROUND_TILE_VARIANTS: {pos: Position; col: number; row: number}[] = [];
+
 export const DECO_POSITIONS: BgDecoItem[] = [
     {pos: {x: 12, y: 9}, asset: '/sprites/deco/13.png'},
     {pos: {x: 2, y: 9}, asset: '/sprites/deco/13.png'},

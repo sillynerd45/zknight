@@ -13,10 +13,16 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
         treePositions,
         bushPositions,
         decoItems,
+        shortTree1Positions,
+        shortTree2Positions,
+        waterFoamPositions,
+        groundOverrides,
         activeTool,
         setActiveTool,
         activeDecoAsset,
         setActiveDecoAsset,
+        activeGroundVariant,
+        setActiveGroundVariant,
         hoveredCell,
         setHoveredCell,
         clickCell,
@@ -32,8 +38,13 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
                     treePositions={treePositions}
                     bushPositions={bushPositions}
                     decoItems={decoItems}
+                    shortTree1Positions={shortTree1Positions}
+                    shortTree2Positions={shortTree2Positions}
+                    waterFoamPositions={waterFoamPositions}
+                    groundOverrides={groundOverrides}
                     activeTool={activeTool}
                     activeDecoAsset={activeDecoAsset}
+                    activeGroundVariant={activeGroundVariant}
                     hoveredCell={hoveredCell}
                     onCellClick={clickCell}
                     onCellHover={setHoveredCell}
@@ -43,11 +54,16 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
             <BackgroundEditorToolbar
                 activeTool={activeTool}
                 activeDecoAsset={activeDecoAsset}
+                activeGroundVariant={activeGroundVariant}
                 treeCount={treePositions.length}
                 bushCount={bushPositions.length}
                 decoCount={decoItems.length}
+                shortTree1Count={shortTree1Positions.length}
+                shortTree2Count={shortTree2Positions.length}
+                waterFoamCount={waterFoamPositions.length}
                 onSetTool={setActiveTool}
                 onSetDecoAsset={setActiveDecoAsset}
+                onSetGroundVariant={setActiveGroundVariant}
                 onLoadCurrent={loadCurrent}
                 onReset={reset}
                 onExport={exportAsTypeScript}

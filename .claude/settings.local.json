@@ -39,7 +39,8 @@
       "Bash(while read key:*)",
       "Bash(do echo:*)",
       "Bash(done)",
-      "Bash(for:*)"
+      "Bash(for:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -2,7 +2,10 @@ import type {Position} from '@/game/types';
 
 // ── Background Editor ──────────────────────────────────────────────
 
-export type BgTool = 'tree' | 'bush' | 'deco' | 'erase';
+export type BgTool =
+    | 'tree' | 'bush' | 'deco' | 'erase'
+    | 'shortTree1' | 'shortTree2' | 'waterFoam'
+    | 'groundPaint' | 'groundErase' | 'groundVariant';
 
 export interface BgDecoItem {
     pos: Position;

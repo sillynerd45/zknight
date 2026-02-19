@@ -3,7 +3,8 @@ import type { Puzzle } from '@/game/types';
 import { GroundTile } from '@/components/GroundTile';
 import { StaticSprite } from '@/components/StaticSprite';
 import { ROCK_ASSETS } from '@/sprites/staticAssets';
-import type { GroundTileKey } from '@/sprites/groundTiles';
+import { getAutoGroundTileKey } from '@/sprites/groundTiles';
+import { GROUND_TILE_REMOVED, GROUND_TILE_VARIANTS } from '@/puzzles/backgroundLayout';
 
 interface BoardGridProps {
   puzzle: Puzzle;
@@ -13,32 +14,31 @@ interface BoardGridProps {
   playOriginY: number;
 }
 
-function getGroundTileKey(x: number, y: number): GroundTileKey {
-  const lastX = BG_GRID_W - 1;
-  const lastY = BG_GRID_H - 1;
-
-  if (x === 0 && y === 0) return 'topLeft';
-  if (x === lastX && y === 0) return 'topRight';
-  if (x === 0 && y === lastY) return 'bottomLeft';
-  if (x === lastX && y === lastY) return 'bottomRight';
-  if (y === 0) return 'topCenter';
-  if (y === lastY) return 'bottomCenter';
-  if (x === 0) return 'middleLeft';
-  if (x === lastX) return 'middleRight';
-  return 'center';
-}
-
 export function BoardGrid({ puzzle, groundOriginX, groundOriginY, playOriginX, playOriginY }: BoardGridProps) {
   const groundTiles: React.ReactNode[] = [];
+
+  // Default 15×11 BG grid
   for (let y = 0; y < BG_GRID_H; y++) {
     for (let x = 0; x < BG_GRID_W; x++) {
+      if (GROUND_TILE_REMOVED.some(p => p.x === x && p.y === y)) continue;
+
+      const variant = GROUND_TILE_VARIANTS.find(v => v.pos.x === x && v.pos.y === y);
       groundTiles.push(
-        <GroundTile
-          key={`ground-${x}-${y}`}
-          tileKey={getGroundTileKey(x, y)}
-          x={x}
-          y={y}
-        />
+        variant ? (
+          <GroundTile key={`ground-${x}-${y}`} col={variant.col} row={variant.row} x={x} y={y} />
+        ) : (
+          <GroundTile key={`ground-${x}-${y}`} tileKey={getAutoGroundTileKey(x, y)} x={x} y={y} />
+        )
+      );
+    }
+  }
+
+  // Extra tiles painted outside the default BG grid
+  for (const v of GROUND_TILE_VARIANTS) {
+    const {pos, col, row} = v;
+    if (pos.x < 0 || pos.x >= BG_GRID_W || pos.y < 0 || pos.y >= BG_GRID_H) {
+      groundTiles.push(
+        <GroundTile key={`ground-${pos.x}-${pos.y}`} col={col} row={row} x={pos.x} y={pos.y} />
       );
     }
   }

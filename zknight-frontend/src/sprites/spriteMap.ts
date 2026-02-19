@@ -115,6 +115,33 @@ export const SPRITE_MAP = {
             idle: {row: 0, startCol: 0, frameCount: 8, fps: 2, loop: true},
         },
     },
+    shortTree1: {
+        src: '/sprites/short_tree_1.png',
+        cols: 8, rows: 1,
+        frameWidth: 192, frameHeight: 192,
+        contentOffsetY: 128,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 8, fps: 8, loop: true},
+        },
+    },
+    shortTree2: {
+        src: '/sprites/short_tree_2.png',
+        cols: 8, rows: 1,
+        frameWidth: 192, frameHeight: 192,
+        contentOffsetY: 128,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 8, fps: 8, loop: true},
+        },
+    },
+    waterFoam: {
+        src: '/sprites/water_foam.png',
+        cols: 16, rows: 1,
+        frameWidth: 192, frameHeight: 192,
+        contentOffsetY: 64,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 16, fps: 8, loop: true},
+        },
+    },
 } as const satisfies Record<string, SpriteSheetConfig>;
 
 export type SpriteKey = keyof typeof SPRITE_MAP;
