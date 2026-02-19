@@ -3,11 +3,11 @@ import { ScaledContainer } from '@/components/ScaledContainer';
 import { GameScene } from '@/components/GameScene';
 import { GameProvider, useGameContext } from '@/context/GameContext';
 import { useKeyboardInput } from '@/hooks/useKeyboardInput';
-import { MoveCounter } from '@/components/MoveCounter';
-import { RaceTimer } from '@/components/RaceTimer';
-import { WinOverlay, ExplosionOverlay } from '@/components/GameOverlays';
-import { ProofGenerationOverlay } from '@/components/ProofGenerationOverlay';
+import { GameHUD } from '@/components/GameHUD';
+import lobbyStyles from './lobby/lobbyStyles.module.css';
+import { ExplosionOverlay } from '@/components/GameOverlays';
 import { Toast } from '@/components/Toast';
+import { SolveProgressOverlay } from './SolveProgressOverlay';
 // CycleNotice removed - cycle detection disabled
 import { PUZZLES } from '@/puzzles';
 import type { Puzzle } from '@/game/types';
@@ -16,7 +16,6 @@ import { EditorSelector, BackgroundEditor, PuzzleEditor } from '@/editor';
 import { LobbyView } from './lobby';
 import { OnChainGameProvider, useOnChainGameContext } from './OnChainGameContext';
 import { useWalletStandalone } from '@/hooks/useWalletStandalone';
-import { GameResultScreen } from './lobby/GameResultScreen';
 import { ZknightService } from './zknightService';
 import { networks } from './bindings';
 
@@ -28,8 +27,9 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
   const wallet = useWalletStandalone();
 
   const [showExplosionOverlay, setShowExplosionOverlay] = useState(false);
-  const [showWinOverlay, setShowWinOverlay] = useState(false);
-  const [showGameResult, setShowGameResult] = useState(false);
+  const [showSolveProgress, setShowSolveProgress] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [solveElapsed, setSolveElapsed] = useState(0);
 
   useKeyboardInput();
 
@@ -45,18 +45,16 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
     }
   }, [state.gameStatus]);
 
-  // Show win overlay after animation completes (600ms delay)
-  // BUT only if game is not finished (don't show local win if game already over)
+  // Show solve progress overlay after win animation (600ms delay).
+  // Stays open through the result phase — dismissed only via onBack/onPlayAgain.
   useEffect(() => {
-    if (state.gameStatus === 'won' && !onChainGame.gameFinished) {
+    if (state.gameStatus === 'won') {
       const timer = setTimeout(() => {
-        setShowWinOverlay(true);
+        setShowSolveProgress(true);
       }, 600);
       return () => clearTimeout(timer);
-    } else {
-      setShowWinOverlay(false);
     }
-  }, [state.gameStatus, onChainGame.gameFinished]);
+  }, [state.gameStatus]);
 
   // When player wins locally, trigger on-chain flow
   useEffect(() => {
@@ -66,13 +64,6 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
     // Only depend on gameStatus and hasCommitted to avoid infinite loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.gameStatus, onChainGame.hasCommitted]);
-
-  // Show game result screen when both players reveal
-  useEffect(() => {
-    if (onChainGame.gameFinished) {
-      setShowGameResult(true);
-    }
-  }, [onChainGame.gameFinished]);
 
   const handleExplosionComplete = useCallback(() => {
     setShowExplosionOverlay(true);
@@ -84,13 +75,23 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
   }, [dispatch]);
 
   const handlePlayAgain = useCallback(() => {
-    setShowGameResult(false);
+    setShowSolveProgress(false);
     onChainGame.clearGame();
     onBack();
   }, [onChainGame, onBack]);
 
-  // Compute elapsed time for win overlay
-  const elapsed = state.startTime ? Date.now() - state.startTime : 0;
+  const handleRetry = useCallback(() => {
+    onChainGame.handleLocalWin(state.tickCount, state.tickHistory);
+  }, [onChainGame, state.tickCount, state.tickHistory]);
+
+  // Capture elapsed time at the moment the puzzle is solved (frozen, not live)
+  useEffect(() => {
+    if (state.gameStatus === 'won' && state.startTime) {
+      setSolveElapsed(Date.now() - state.startTime);
+    }
+  }, [state.gameStatus, state.startTime]);
+
+  const isProofInProgress = showSolveProgress && !onChainGame.gameFinished;
 
   return (
     <ScaledContainer>
@@ -107,63 +108,111 @@ function GamePlayView({ onBack }: { onBack: () => void }) {
           crossingExplosionPos={state.crossingExplosionPos}
           onExplosionComplete={handleExplosionComplete}
         />
-        <MoveCounter />
-        <RaceTimer />
+        <GameHUD />
         {/* CycleNotice removed - cycle detection disabled */}
-
-        {/* Local win overlay (before on-chain flow completes) */}
-        {showWinOverlay && !onChainGame.gameFinished && (
-          <WinOverlay turnCount={state.turnCount} elapsed={elapsed} />
-        )}
 
         {/* Explosion overlay */}
         {state.gameStatus === 'exploded' && showExplosionOverlay && (
           <ExplosionOverlay onReset={handleReset} />
         )}
 
-        {/* Proof generation overlay */}
-        {onChainGame.isGeneratingProof && (
-          <ProofGenerationOverlay progress={onChainGame.proofProgress} />
+        {/* Unified overlay: progress steps → result (stays open until dismissed) */}
+        {showSolveProgress && (
+          <SolveProgressOverlay
+            turnCount={state.turnCount}
+            elapsed={solveElapsed}
+            currentPlayer={wallet.publicKey || ''}
+            onRetry={handleRetry}
+            onBack={handlePlayAgain}
+          />
         )}
 
-        {/* Error toast */}
-        {onChainGame.error && (
+        {/* Error toast only when overlay is not showing */}
+        {onChainGame.error && !showSolveProgress && (
           <Toast message={onChainGame.error} onDismiss={onChainGame.resetError} />
         )}
 
-        {/* Game result screen (overlay on top of game board) */}
-        {showGameResult && onChainGame.game && (
-          <GameResultScreen
-            winner={onChainGame.winner}
-            player1={onChainGame.game.player1}
-            player2={onChainGame.game.player2 !== undefined ? onChainGame.game.player2 : ''}
-            player1TickCount={onChainGame.game.p1_tick_count !== undefined ? Number(onChainGame.game.p1_tick_count) : null}
-            player2TickCount={onChainGame.game.p2_tick_count !== undefined ? Number(onChainGame.game.p2_tick_count) : null}
-            player1CommitTime={onChainGame.game.p1_commit_time !== undefined ? Number(onChainGame.game.p1_commit_time) : null}
-            player2CommitTime={onChainGame.game.p2_commit_time !== undefined ? Number(onChainGame.game.p2_commit_time) : null}
-            currentPlayer={wallet.publicKey || ''}
-            onPlayAgain={handlePlayAgain}
-            onBackToLobby={handlePlayAgain}
-          />
+        {/* Confirm leave dialog */}
+        {showLeaveConfirm && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 25, 35, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+          }}>
+            <div className={lobbyStyles.solveCard}>
+              <div className={lobbyStyles.solveCardHeader}>
+                <h2 className={lobbyStyles.solveCardTitle}>LEAVE GAME?</h2>
+              </div>
+              <div style={{ padding: '1.25rem 1.75rem' }}>
+                {isProofInProgress && (
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    background: '#F2D06B',
+                    border: '3px solid #1a1a1a',
+                    marginBottom: '1rem',
+                    fontFamily: "'VT323', monospace",
+                    fontSize: '1.2rem',
+                    color: '#1a1a1a',
+                    letterSpacing: '0.5px',
+                  }}>
+                    ⚠ ZK PROOF IN PROGRESS — leaving now may cause you to forfeit the match.
+                  </div>
+                )}
+                <p style={{
+                  fontFamily: "'VT323', monospace",
+                  fontSize: '1.3rem',
+                  color: '#555',
+                  margin: 0,
+                  letterSpacing: '0.5px',
+                }}>
+                  You will abandon this puzzle. Your progress will be lost.
+                </p>
+              </div>
+              <div className={lobbyStyles.resultActions} style={{ padding: '0 1.75rem 1.25rem' }}>
+                <button
+                  className={lobbyStyles.btnGhost}
+                  onClick={() => setShowLeaveConfirm(false)}
+                  style={{ flex: 1, textAlign: 'center' }}
+                >
+                  CANCEL
+                </button>
+                <button
+                  className={lobbyStyles.btnDanger}
+                  onClick={onBack}
+                  style={{ flex: 1, textAlign: 'center' }}
+                >
+                  LEAVE
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
       <button
-        onClick={onBack}
+        onClick={() => setShowLeaveConfirm(true)}
         style={{
           position: 'fixed',
           top: 8,
           right: 8,
           zIndex: 9999,
-          background: '#fff',
-          color: '#000',
-          border: 'none',
-          padding: '4px 12px',
+          fontFamily: "'VT323', monospace",
+          fontSize: 18,
+          letterSpacing: '1px',
+          padding: '6px 14px',
+          border: '3px solid #1a1a1a',
           cursor: 'pointer',
-          fontFamily: 'monospace',
-          fontSize: 12,
+          boxShadow: '4px 4px 0px 0px #1a1a1a',
+          textTransform: 'uppercase',
+          background: '#e0d5b8',
+          color: '#1a1a1a',
+          transition: 'transform 0.1s, box-shadow 0.1s',
         }}
       >
-        Back to Lobby
+        BACK TO LOBBY
       </button>
     </ScaledContainer>
   );

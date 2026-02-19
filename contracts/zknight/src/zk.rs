@@ -1,5 +1,4 @@
 //! ZK verification and utility functions for ZKnight
-//! Based on xray-games reference implementation
 
 use crate::types::{Puzzle, VerificationKeys};
 use soroban_poseidon::poseidon2_hash;

@@ -50,3 +50,4 @@ zk/bad_*.json
 *.sym
 *.zkey
 zk/*_output.txt
+*.bak

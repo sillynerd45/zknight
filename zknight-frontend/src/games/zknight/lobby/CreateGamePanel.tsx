@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ZknightService } from '../zknightService';
 import type { Game } from '../bindings';
+import styles from './lobbyStyles.module.css';
 
 interface CreateGamePanelProps {
   service: ZknightService;
@@ -120,195 +121,56 @@ export function CreateGamePanel({
   }, [activeGameId]);
 
   return (
-    <div style={{
-      padding: '2rem',
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '12px',
-      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(46, 110, 130, 0.1)',
-    }}>
-      <h3 style={{
-        margin: '0 0 1.5rem 0',
-        fontSize: '1.4rem',
-        color: '#2e6e82',
-        fontWeight: '600',
-      }}>
-        Create Game
-      </h3>
-
+    <div>
       {activeGameId === null ? (
         // Create game button
         <div>
-          <p style={{ color: '#666', fontSize: '0.95rem', margin: '0 0 1.5rem 0', lineHeight: 1.5 }}>
+          <p className={styles.panelDescription}>
             Create a new game and wait for an opponent to join
           </p>
           <button
+            className={styles.btnCreate}
             onClick={handleCreateGame}
             disabled={!wallet.isConnected || creating}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              background: wallet.isConnected ? (creating ? '#6fab7e' : '#28a745') : '#ccc',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: wallet.isConnected && !creating ? 'pointer' : 'not-allowed',
-              fontSize: '1.05rem',
-              fontWeight: '600',
-              boxShadow: wallet.isConnected ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (wallet.isConnected && !creating) {
-                e.currentTarget.style.background = '#218838';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (wallet.isConnected) {
-                e.currentTarget.style.background = '#28a745';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
-              }
-            }}
           >
-            {creating ? '⏳ Creating...' : '✨ Create Game'}
+            {creating ? 'CREATING...' : 'CREATE GAME'}
           </button>
           {!wallet.isConnected && (
-            <p style={{
-              margin: '0.75rem 0 0 0',
-              fontSize: '0.85rem',
-              color: '#999',
-              textAlign: 'center',
-            }}>
-              Connect your wallet to create a game
-            </p>
+            <p className={styles.hint}>Connect your wallet to create a game</p>
           )}
         </div>
       ) : (
         // Waiting for opponent
         <div>
-          <div style={{
-            padding: '1.5rem',
-            background: 'linear-gradient(135deg, #e8f5f7 0%, #d4ebf0 100%)',
-            border: '2px solid #b8dce2',
-            borderRadius: '8px',
-            marginBottom: '1.5rem',
-          }}>
-            <p style={{
-              margin: '0 0 0.75rem 0',
-              fontSize: '0.9rem',
-              color: '#2e6e82',
-              fontWeight: '500',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
-              Game Created
-            </p>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              marginBottom: '0.75rem',
-            }}>
-              <p style={{
-                margin: 0,
-                fontWeight: 'bold',
-                color: '#1a5166',
-                fontSize: '1.5rem',
-                fontFamily: 'monospace',
-              }}>
-                #{activeGameId}
-              </p>
+          <div className={styles.waitingBox}>
+            <p className={styles.waitingLabel}>Game Created</p>
+            <div className={styles.waitingIdRow}>
+              <p className={styles.waitingGameId}>#{activeGameId}</p>
               <button
+                className={copied ? styles.btnCopied : styles.btnCopy}
                 onClick={handleCopyGameId}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  background: copied ? '#28a745' : '#2e6e82',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                }}
               >
-                {copied ? '✓ Copied' : '📋 Copy ID'}
+                {copied ? 'COPIED!' : 'COPY ID'}
               </button>
             </div>
-            <p style={{ margin: 0, color: '#555', fontSize: '0.9rem' }}>
-              Share this ID with your opponent
-            </p>
+            <p className={styles.waitingHint}>Share this ID with your opponent</p>
           </div>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.75rem',
-            padding: '1.5rem',
-            marginBottom: '1.5rem',
-            background: '#f8f9fa',
-            borderRadius: '8px',
-          }}>
-            <div
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                background: '#28a745',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }}
-            />
-            <span style={{ color: '#555', fontSize: '0.95rem', fontWeight: '500' }}>
-              Waiting for opponent...
-            </span>
+          <div className={styles.waitingPulse}>
+            <div className={styles.waitingDot} />
+            <span>Waiting for opponent...</span>
           </div>
 
           <button
+            className={styles.btnDanger}
             onClick={handleCancelGame}
             disabled={cancelling}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              background: cancelling ? '#e88a94' : '#dc3545',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: cancelling ? 'not-allowed' : 'pointer',
-              fontSize: '1rem',
-              fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (!cancelling) {
-                e.currentTarget.style.background = '#c82333';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!cancelling) {
-                e.currentTarget.style.background = '#dc3545';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.3)';
-              }
-            }}
+            style={{ width: '100%' }}
           >
-            {cancelling ? '⏳ Cancelling...' : '❌ Cancel Game'}
+            {cancelling ? 'CANCELLING...' : 'CANCEL GAME'}
           </button>
         </div>
       )}
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.2); }
-        }
-      `}</style>
     </div>
   );
 }

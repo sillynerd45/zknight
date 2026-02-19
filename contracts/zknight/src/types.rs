@@ -90,7 +90,6 @@ pub enum DataKey {
 // ============================================================================
 
 /// Groth16 verification keys.
-/// Based on xray-games pattern.
 pub struct VerificationKeys {
     pub alpha: [u8; 64],
     pub beta: [u8; 128],

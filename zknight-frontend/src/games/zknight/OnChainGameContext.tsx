@@ -230,33 +230,54 @@ export function OnChainGameProvider({ children, playerAddress, signer, service }
 
   const handleLocalWin = useCallback(
     async (tickCount: number, tickHistory: MoveValue[]) => {
-      if (!state.gameId || !state.puzzle || state.hasCommitted) return;
+      // isGeneratingProof guard prevents double-execution while worker is running.
+      // hasCommitted guard is intentionally removed to support retry from step 2/3.
+      if (!state.gameId || !state.puzzle || state.isGeneratingProof) return;
+
+      // Clear any existing error so retry shows fresh progress
+      setState((prev) => ({ ...prev, error: null }));
 
       try {
-        // 1. Generate preimage and commitment
-        const preimage = generatePreimage();
-        const commitment = await computeCommitment(preimage);
+        let preimage: Uint8Array;
 
-        setState((prev) => ({
-          ...prev,
-          preimage,
-          commitment,
-        }));
+        // 1. Commit to contract (skip if already committed — supports resume after step 2/3 error)
+        if (!state.hasCommitted) {
+          const newPreimage = generatePreimage();
+          const commitment = await computeCommitment(newPreimage);
+          preimage = newPreimage;
 
-        // 2. Commit to contract
-        await service.commitSolve(
-          state.gameId,
-          playerAddress,
-          commitment,
-          signer
-        );
+          setState((prev) => ({
+            ...prev,
+            preimage: newPreimage,
+            commitment,
+          }));
 
-        setState((prev) => ({
-          ...prev,
-          hasCommitted: true,
-        }));
+          await service.commitSolve(
+            state.gameId,
+            playerAddress,
+            commitment,
+            signer
+          );
 
-        // 3. Start proof generation in Web Worker
+          setState((prev) => ({
+            ...prev,
+            hasCommitted: true,
+          }));
+        } else {
+          // Resume: use saved preimage from state (required for reveal)
+          if (!state.preimage) {
+            setState((prev) => ({
+              ...prev,
+              error: 'Preimage lost — cannot retry. Please restart.',
+            }));
+            return;
+          }
+          preimage = state.preimage;
+        }
+
+        // 2+3. Prove + Reveal (skip if already revealed — supports idempotent calls)
+        if (state.hasRevealed) return;
+
         setState((prev) => ({
           ...prev,
           isGeneratingProof: true,
@@ -299,7 +320,7 @@ export function OnChainGameProvider({ children, playerAddress, signer, service }
           }
 
           try {
-            // 4. Encode proof
+            // Encode proof
             setState((prev) => ({
               ...prev,
               proofProgress: 'Encoding proof...',
@@ -312,7 +333,7 @@ export function OnChainGameProvider({ children, playerAddress, signer, service }
               proof: encodedProof,
             }));
 
-            // 5. Reveal solution with proof
+            // Reveal solution with proof
             setState((prev) => ({
               ...prev,
               proofProgress: 'Submitting proof to contract...',
@@ -366,7 +387,9 @@ export function OnChainGameProvider({ children, playerAddress, signer, service }
         }));
       }
     },
-    [state.gameId, state.puzzle, state.hasCommitted, playerAddress, signer, service]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.gameId, state.puzzle, state.hasCommitted, state.hasRevealed,
+     state.preimage, state.isGeneratingProof, playerAddress, signer, service]
   );
 
   // ============================================================================

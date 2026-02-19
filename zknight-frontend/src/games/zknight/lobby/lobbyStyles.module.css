@@ -1,0 +1,993 @@
+/* ============================================
+   ZKnight Lobby — 8-Bit Neo-Brutalism
+   ============================================ */
+
+/* --- Page --- */
+.page {
+    min-height: 100vh;
+    background: #5DA6A8;
+    padding: 0;
+    font-family: 'VT323', monospace;
+    color: #1a1a1a;
+}
+
+.pageInner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem 2rem;
+}
+
+/* --- Header Bar --- */
+.header {
+    background: #2F4858;
+    border-bottom: 4px solid #1a1a1a;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.headerTitle {
+    font-size: 2.5rem;
+    color: #F2D06B;
+    margin: 0;
+    font-family: 'VT323', monospace;
+    letter-spacing: 2px;
+    text-shadow: 3px 3px 0 #1a1a1a;
+}
+
+.headerTagline {
+    font-size: 1.4rem;
+    color: #F4E8C1;
+    margin: 0;
+    text-align: center;
+    flex: 1;
+    letter-spacing: 1px;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* --- Wallet --- */
+.walletPill {
+    padding: 0.5rem 1rem;
+    background: #F4E8C1;
+    border: 3px solid #1a1a1a;
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+}
+
+.walletWarning {
+    padding: 0.5rem 1rem;
+    background: #F2D06B;
+    border: 3px solid #1a1a1a;
+    font-size: 1.1rem;
+    color: #1a1a1a;
+}
+
+.walletWarning a {
+    color: #4B6992;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+/* --- Panels --- */
+.panel {
+    background: #F4E8C1;
+    border: 3px solid #1a1a1a;
+    box-shadow: 6px 6px 0px 0px #1a1a1a;
+    padding: 1.5rem;
+}
+
+.panelTitle {
+    margin: 0 0 1rem 0;
+    font-size: 1.8rem;
+    color: #1a1a1a;
+    font-family: 'VT323', monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 3px solid #1a1a1a;
+    padding-bottom: 0.5rem;
+}
+
+.panelDescription {
+    color: #555;
+    font-size: 1.2rem;
+    margin: 0 0 1.25rem 0;
+    line-height: 1.4;
+}
+
+/* --- Single Column Layout --- */
+.singleCol {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+/* --- Tab Panel --- */
+.tabPanel {
+    border: 3px solid #1a1a1a;
+    box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.tabBar {
+    display: flex;
+    border-bottom: 3px solid #1a1a1a;
+    background: #2F4858;
+}
+
+.tabBtn {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    padding: 0.75rem 2rem;
+    border: none;
+    border-right: 3px solid #1a1a1a;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    flex: 1;
+    text-align: center;
+    transition: background 0.1s;
+}
+
+.tabBtn:last-child {
+    border-right: none;
+}
+
+.tabBtnActive {
+    composes: tabBtn;
+    background: #F4E8C1;
+    color: #1a1a1a;
+}
+
+.tabBtnInactive {
+    composes: tabBtn;
+    background: #3a5a6e;
+    color: #F4E8C1;
+}
+
+.tabBtnInactive:hover {
+    background: #4a6a7e;
+}
+
+.tabBtnDisabled {
+    composes: tabBtn;
+    background: #2F4858;
+    color: #556;
+    cursor: not-allowed;
+}
+
+.tabContent {
+    background: #F4E8C1;
+    padding: 1.5rem;
+}
+
+/* --- Buttons --- */
+.btn {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+    padding: 0.75rem 1.5rem;
+    border: 3px solid #1a1a1a;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 4px 4px 0px 0px #1a1a1a;
+    text-transform: uppercase;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px #1a1a1a;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: 4px 4px 0px 0px #999;
+    border-color: #999;
+}
+
+.btnPrimary {
+    composes: btn;
+    background: #4B6992;
+    color: #fff;
+}
+
+.btnAccent {
+    composes: btn;
+    background: #F2D06B;
+    color: #1a1a1a;
+}
+
+.btnDanger {
+    composes: btn;
+    background: #D95763;
+    color: #fff;
+}
+
+.btnGhost {
+    composes: btn;
+    background: #e0d5b8;
+    color: #1a1a1a;
+}
+
+.btnCreate {
+    composes: btnAccent;
+    width: 100%;
+    padding: 1.5rem;
+    font-size: 1.8rem;
+    letter-spacing: 3px;
+    box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.btnCreate:hover:not(:disabled) {
+    box-shadow: 8px 8px 0px 0px #1a1a1a;
+}
+
+.btnSmall {
+    composes: btn;
+    padding: 0.4rem 0.8rem;
+    font-size: 1.1rem;
+    box-shadow: 3px 3px 0px 0px #1a1a1a;
+}
+
+.btnSmall:hover:not(:disabled) {
+    box-shadow: 5px 5px 0px 0px #1a1a1a;
+}
+
+.btnConnect {
+    composes: btnPrimary;
+    font-size: 1.3rem;
+    padding: 0.6rem 1.5rem;
+}
+
+.btnDisconnect {
+    composes: btnGhost;
+    font-size: 1.1rem;
+    padding: 0.4rem 1rem;
+}
+
+.btnDevEditors {
+    composes: btn;
+    background: #6c757d;
+    color: #fff;
+    font-size: 1.1rem;
+    padding: 0.4rem 1rem;
+}
+
+/* --- Input --- */
+.input {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    padding: 0.75rem 1rem;
+    border: 3px solid #1a1a1a;
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: inset 4px 4px 0px 0px #ccc;
+    outline: none;
+    letter-spacing: 1px;
+}
+
+.input:focus {
+    box-shadow: inset 4px 4px 0px 0px #4B6992;
+    border-color: #4B6992;
+}
+
+.input::placeholder {
+    color: #999;
+}
+
+/* --- Join Row --- */
+.joinRow {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.joinInput {
+    composes: input;
+    flex: 1;
+}
+
+.joinBtn {
+    composes: btnPrimary;
+    white-space: nowrap;
+}
+
+/* --- Reconnecting --- */
+.reconnecting {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: #F2D06B;
+    border: 3px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.reconnectingDot {
+    width: 10px;
+    height: 10px;
+    background: #D95763;
+    animation: blink 1s step-end infinite;
+}
+
+/* --- Waiting State --- */
+.waitingBox {
+    padding: 1.25rem;
+    background: #e8dfc4;
+    border: 3px solid #1a1a1a;
+    margin-bottom: 1.25rem;
+}
+
+.waitingLabel {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #4B6992;
+}
+
+.waitingGameId {
+    margin: 0;
+    font-size: 2rem;
+    font-family: 'VT323', monospace;
+    color: #1a1a1a;
+    letter-spacing: 2px;
+}
+
+.waitingIdRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.waitingHint {
+    margin: 0;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.waitingPulse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    background: #e8dfc4;
+    border: 3px solid #1a1a1a;
+    font-size: 1.3rem;
+}
+
+.waitingDot {
+    width: 12px;
+    height: 12px;
+    background: #28a745;
+    animation: blink 1s step-end infinite;
+}
+
+/* --- Copy Button --- */
+.btnCopy {
+    composes: btnSmall;
+    background: #4B6992;
+    color: #fff;
+}
+
+.btnCopied {
+    composes: btnSmall;
+    background: #28a745;
+    color: #fff;
+}
+
+/* --- Game List --- */
+.gameListScroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.gameListScroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.gameListScroll::-webkit-scrollbar-track {
+    background: #e0d5b8;
+    border-left: 3px solid #1a1a1a;
+}
+
+.gameListScroll::-webkit-scrollbar-thumb {
+    background: #4B6992;
+    border: 2px solid #1a1a1a;
+}
+
+.gameRow {
+    padding: 1rem;
+    border: 2px solid #1a1a1a;
+    border-bottom: none;
+    background: #F4E8C1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.1s;
+}
+
+.gameRow:last-child {
+    border-bottom: 2px solid #1a1a1a;
+}
+
+.gameRow:hover {
+    background: #efe4c6;
+}
+
+.gameRowOwn {
+    composes: gameRow;
+    background: #e8dfc4;
+}
+
+.gameRowOwn:hover {
+    background: #ddd5b6;
+}
+
+.gameRowExpired {
+    composes: gameRow;
+    opacity: 0.5;
+    background: #e8e0c8;
+}
+
+.gameRowExpiring {
+    composes: gameRow;
+    background: #fce8b2;
+}
+
+.gameInfo {
+    flex: 1;
+}
+
+.gameCreator {
+    font-size: 1.2rem;
+    font-family: 'VT323', monospace;
+    color: #1a1a1a;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gameMeta {
+    font-size: 1.1rem;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.gameId {
+    font-family: 'VT323', monospace;
+    color: #4B6992;
+}
+
+.expiryGreen {
+    color: #28a745;
+}
+
+.expiryRed {
+    color: #D95763;
+    font-weight: bold;
+}
+
+/* --- Tags --- */
+.tag {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    background: #4B6992;
+    color: #fff;
+    border: 2px solid #1a1a1a;
+    font-size: 1rem;
+    font-family: 'VT323', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tagP2 {
+    composes: tag;
+    background: #6c757d;
+}
+
+/* --- Empty State --- */
+.emptyState {
+    padding: 3rem;
+    text-align: center;
+    color: #999;
+    border: 3px dashed #ccc;
+    background: #efe4c6;
+}
+
+.emptyStateTitle {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.emptyStateSub {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.2rem;
+    color: #aaa;
+}
+
+/* --- Loading Spinner --- */
+.spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+}
+
+.spinnerIcon {
+    width: 24px;
+    height: 24px;
+    border: 4px solid #e0d5b8;
+    border-top: 4px solid #4B6992;
+    animation: spin 0.8s steps(8) infinite;
+}
+
+.spinnerText {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+/* --- Hint Text --- */
+.hint {
+    margin: 0.75rem 0 0 0;
+    font-size: 1.1rem;
+    color: #999;
+    text-align: center;
+}
+
+/* --- Result Screen --- */
+.resultOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.resultCard {
+    background: #F4E8C1;
+    border: 4px solid #1a1a1a;
+    box-shadow: 8px 8px 0px 0px #1a1a1a;
+    padding: 2.5rem;
+    max-width: 600px;
+    width: 90%;
+    animation: slideIn 0.3s ease-out;
+}
+
+.resultHeader {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.resultEmoji {
+    font-size: 4rem;
+    margin-bottom: 0.5rem;
+    animation: bounce 0.6s ease-out;
+}
+
+.resultTitle {
+    margin: 0 0 0.5rem 0;
+    font-size: 3rem;
+    font-family: 'VT323', monospace;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.15);
+}
+
+.resultTitleWin {
+    composes: resultTitle;
+    color: #28a745;
+}
+
+.resultTitleLose {
+    composes: resultTitle;
+    color: #D95763;
+}
+
+.resultTitleDraw {
+    composes: resultTitle;
+    color: #6c757d;
+}
+
+.resultSubtext {
+    margin: 0;
+    color: #666;
+    font-size: 1.3rem;
+}
+
+/* --- Player Stats --- */
+.statsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: #efe4c6;
+    border: 3px solid #1a1a1a;
+}
+
+.playerCard {
+    padding: 1rem;
+    background: #F4E8C1;
+    border: 2px solid #1a1a1a;
+}
+
+.playerCardWinner {
+    composes: playerCard;
+    background: #d4edda;
+    border: 3px solid #28a745;
+}
+
+.playerHeader {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.playerAddress {
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+}
+
+.playerStats {
+    font-size: 1.1rem;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.statRow {
+    display: flex;
+    justify-content: space-between;
+}
+
+.statLabel {
+    font-weight: 500;
+}
+
+.statValue {
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+}
+
+/* --- Result Actions --- */
+.resultActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.resultActions .btnPrimary,
+.resultActions .btnGhost {
+    flex: 1;
+    text-align: center;
+}
+
+/* ============================================
+   Solve Progress Overlay
+   ============================================ */
+
+/* --- Overlay --- */
+.solveOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 25, 35, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.solveCard {
+    background: #F4E8C1;
+    border: 4px solid #1a1a1a;
+    box-shadow: 8px 8px 0px 0px #1a1a1a;
+    padding: 0;
+    max-width: 560px;
+    width: 90%;
+    animation: slideIn 0.25s ease-out;
+    overflow: hidden;
+}
+
+/* --- Header --- */
+.solveCardHeader {
+    background: #2F4858;
+    border-bottom: 4px solid #1a1a1a;
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.solveCardTitle {
+    font-family: 'VT323', monospace;
+    font-size: 2.4rem;
+    color: #F2D06B;
+    margin: 0;
+    letter-spacing: 3px;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+    line-height: 1;
+}
+
+.solveCardStats {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.solveStat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+}
+
+.solveStatLabel {
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+    color: #8ab4c4;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.solveStatValue {
+    font-family: 'VT323', monospace;
+    font-size: 1.6rem;
+    color: #F4E8C1;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+/* --- Step List --- */
+.solveStepList {
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.solveStep {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-bottom: 2px solid #d5c9a8;
+    position: relative;
+}
+
+.solveStep:last-child {
+    border-bottom: none;
+}
+
+/* --- Step Icon Box --- */
+.solveStepIcon {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.solveStepIconPending {
+    composes: solveStepIcon;
+    background: #e0d5b8;
+    color: #aaa;
+    border-color: #bbb;
+}
+
+.solveStepIconActive {
+    composes: solveStepIcon;
+    background: #4B6992;
+    border-color: #4B6992;
+    /* spinner rendered as child div */
+}
+
+.solveStepIconDone {
+    composes: solveStepIcon;
+    background: #28a745;
+    color: #fff;
+    border-color: #1a7a30;
+}
+
+.solveStepIconError {
+    composes: solveStepIcon;
+    background: #D95763;
+    color: #fff;
+    border-color: #a83040;
+}
+
+/* 8-bit pixel spinner inside active icon */
+.solveStepSpinner {
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    animation: spin 0.6s steps(8) infinite;
+}
+
+/* --- Step Body --- */
+.solveStepBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.solveStepLabel {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.solveStepLabelPending {
+    composes: solveStepLabel;
+    color: #999;
+}
+
+.solveStepLabelActive {
+    composes: solveStepLabel;
+    color: #1a1a1a;
+}
+
+.solveStepLabelDone {
+    composes: solveStepLabel;
+    color: #28a745;
+}
+
+.solveStepLabelError {
+    composes: solveStepLabel;
+    color: #D95763;
+}
+
+.solveStepDetail {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0.15rem 0 0 0;
+    letter-spacing: 0.5px;
+}
+
+.solveStepErrorMsg {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: #D95763;
+    margin: 0.25rem 0 0 0;
+    letter-spacing: 0.5px;
+    word-break: break-word;
+}
+
+/* --- Waiting Section (step 4) --- */
+.solveWaitingContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0 0.25rem;
+    gap: 0.5rem;
+}
+
+.sheepWrapper {
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.solveWaitingText {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    color: #4B6992;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* --- Footer (back to lobby) --- */
+.solveCardFooter {
+    padding: 1rem 1.75rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 2px solid #d5c9a8;
+}
+
+/* --- Footer --- */
+.footer {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: rgba(244, 232, 193, 0.85);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* --- Animations --- */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+@keyframes blink {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
