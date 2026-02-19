@@ -7,6 +7,9 @@ import {
     SHORT_TREE_1_POSITIONS,
     SHORT_TREE_2_POSITIONS,
     WATER_FOAM_POSITIONS,
+    GOLD_POSITIONS,
+    SHEEP_POSITIONS,
+    WATER_ROCK_POSITIONS,
 } from '@/puzzles/backgroundLayout';
 import {getDecoSize} from '@/editor/decoSizes';
 
@@ -84,6 +87,37 @@ export function BackgroundDecorations({originX, originY}: BackgroundDecorationsP
                 <Sprite
                     key={`st2-${i}`}
                     spriteKey="shortTree2"
+                    animation="idle"
+                    x={pos.x}
+                    y={pos.y}
+                    zIndex={pos.y}
+                />
+            ))}
+            {GOLD_POSITIONS.map((pos, i) => (
+                <Sprite
+                    key={`gold-${i}`}
+                    spriteKey="gold"
+                    animation="idle"
+                    x={pos.x}
+                    y={pos.y}
+                    zIndex={pos.y}
+                />
+            ))}
+            {SHEEP_POSITIONS.map((item, i) => (
+                <Sprite
+                    key={`sheep-${i}`}
+                    spriteKey="sheep"
+                    animation="idle"
+                    x={item.pos.x}
+                    y={item.pos.y}
+                    zIndex={item.pos.y}
+                    mirror={item.mirror}
+                />
+            ))}
+            {WATER_ROCK_POSITIONS.map((pos, i) => (
+                <Sprite
+                    key={`wr-${i}`}
+                    spriteKey="waterRock"
                     animation="idle"
                     x={pos.x}
                     y={pos.y}

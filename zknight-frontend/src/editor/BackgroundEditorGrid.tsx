@@ -9,7 +9,7 @@ import {
     BG_PADDING_TILES,
 } from '@/game/constants';
 import type {Position} from '@/game/types';
-import type {BgTool, BgDecoItem} from './types';
+import type {BgTool, BgDecoItem, SheepItem} from './types';
 import {WaterLayer} from '@/components/WaterLayer';
 import {GroundTile} from '@/components/GroundTile';
 import {Sprite} from '@/components/Sprite';
@@ -99,9 +99,13 @@ interface BackgroundEditorGridProps {
     shortTree1Positions: Position[];
     shortTree2Positions: Position[];
     waterFoamPositions: Position[];
+    goldPositions: Position[];
+    sheepPositions: SheepItem[];
+    waterRockPositions: Position[];
     groundOverrides: Map<string, {col: number; row: number} | null>;
     activeTool: BgTool;
     activeDecoAsset: string;
+    activeSheepMirror: boolean;
     activeGroundVariant: {col: number; row: number};
     hoveredCell: Position | null;
     onCellClick: (pos: Position) => void;
@@ -128,9 +132,13 @@ export function BackgroundEditorGrid({
     shortTree1Positions,
     shortTree2Positions,
     waterFoamPositions,
+    goldPositions,
+    sheepPositions,
+    waterRockPositions,
     groundOverrides,
     activeTool,
     activeDecoAsset,
+    activeSheepMirror,
     activeGroundVariant,
     hoveredCell,
     onCellClick,
@@ -350,6 +358,15 @@ export function BackgroundEditorGrid({
                 {shortTree2Positions.map((pos, i) => (
                     <Sprite key={`st2-${i}`} spriteKey="shortTree2" animation="idle" x={pos.x} y={pos.y} zIndex={Math.max(0, pos.y)} />
                 ))}
+                {goldPositions.map((pos, i) => (
+                    <Sprite key={`gold-${i}`} spriteKey="gold" animation="idle" x={pos.x} y={pos.y} zIndex={Math.max(0, pos.y)} />
+                ))}
+                {sheepPositions.map((item, i) => (
+                    <Sprite key={`sheep-${i}`} spriteKey="sheep" animation="idle" x={item.pos.x} y={item.pos.y} zIndex={Math.max(0, item.pos.y)} mirror={item.mirror} />
+                ))}
+                {waterRockPositions.map((pos, i) => (
+                    <Sprite key={`wr-${i}`} spriteKey="waterRock" animation="idle" x={pos.x} y={pos.y} zIndex={Math.max(0, pos.y)} />
+                ))}
                 {decoItems.map((item, i) => (
                     <DecoItem key={`deco-${i}`} src={item.asset} x={item.pos.x} y={item.pos.y} zIndex={Math.max(0, item.pos.y)} />
                 ))}
@@ -373,6 +390,21 @@ export function BackgroundEditorGrid({
                 {hoveredIsValidDeco && activeTool === 'shortTree2' && (
                     <div style={{opacity: 0.4, pointerEvents: 'none'}}>
                         <Sprite spriteKey="shortTree2" animation="idle" x={hx} y={hy} zIndex={100} />
+                    </div>
+                )}
+                {hoveredIsValidDeco && activeTool === 'gold' && (
+                    <div style={{opacity: 0.4, pointerEvents: 'none'}}>
+                        <Sprite spriteKey="gold" animation="idle" x={hx} y={hy} zIndex={100} />
+                    </div>
+                )}
+                {hoveredIsValidDeco && activeTool === 'sheep' && (
+                    <div style={{opacity: 0.4, pointerEvents: 'none'}}>
+                        <Sprite spriteKey="sheep" animation="idle" x={hx} y={hy} zIndex={100} mirror={activeSheepMirror} />
+                    </div>
+                )}
+                {hoveredIsValidDeco && activeTool === 'waterRock' && (
+                    <div style={{opacity: 0.4, pointerEvents: 'none'}}>
+                        <Sprite spriteKey="waterRock" animation="idle" x={hx} y={hy} zIndex={100} />
                     </div>
                 )}
                 {hoveredIsValidDeco && activeTool === 'deco' && (

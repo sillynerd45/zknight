@@ -8,6 +8,8 @@ export interface SpriteAnimation {
     fps: number;
     loop: boolean;      // false = play once then hold last frame
     mirror?: boolean;   // true = apply CSS scaleX(-1) (e.g. walk left)
+    loopDelay?: number; // ms to pause on the last frame before restarting a loop
+    randomPhase?: boolean; // true = each instance starts at a random frame on mount
 }
 
 /** A spritesheet with one or more named animations. */
@@ -138,6 +140,35 @@ export const SPRITE_MAP = {
         cols: 16, rows: 1,
         frameWidth: 192, frameHeight: 192,
         contentOffsetY: 64,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 16, fps: 8, loop: true, randomPhase: true},
+        },
+    },
+    gold: {
+        src: '/sprites/gold.png',
+        cols: 6, rows: 1,
+        frameWidth: 128, frameHeight: 128,
+        // contentOffsetY=32: content centered within 128px frame (128-64)/2 = 32
+        contentOffsetY: 32,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 6, fps: 8, loop: true, loopDelay: 2000},
+        },
+    },
+    sheep: {
+        src: '/sprites/sheep.png',
+        cols: 12, rows: 1,
+        frameWidth: 128, frameHeight: 128,
+        // contentOffsetY=32: content centered within 128px frame (128-64)/2 = 32
+        contentOffsetY: 32,
+        animations: {
+            idle: {row: 0, startCol: 0, frameCount: 12, fps: 8, loop: true, loopDelay: 2000},
+        },
+    },
+    waterRock: {
+        src: '/sprites/water_rock.png',
+        cols: 16, rows: 1,
+        frameWidth: 64, frameHeight: 64,
+        // 64px frame = TILE_SIZE, no content offset needed
         animations: {
             idle: {row: 0, startCol: 0, frameCount: 16, fps: 8, loop: true},
         },

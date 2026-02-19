@@ -15,7 +15,12 @@ interface BackgroundEditorToolbarProps {
     shortTree1Count: number;
     shortTree2Count: number;
     waterFoamCount: number;
+    goldCount: number;
+    sheepCount: number;
+    waterRockCount: number;
+    activeSheepMirror: boolean;
     onSetTool: (tool: BgTool) => void;
+    onSetSheepMirror: (v: boolean) => void;
     onSetDecoAsset: (asset: string) => void;
     onSetGroundVariant: (variant: {col: number; row: number}) => void;
     onLoadCurrent: () => void;
@@ -30,6 +35,9 @@ const DECORATION_TOOLS: {key: BgTool; label: string}[] = [
     {key: 'shortTree1', label: 'Short Tree 1'},
     {key: 'shortTree2', label: 'Short Tree 2'},
     {key: 'waterFoam', label: 'Water Foam'},
+    {key: 'gold', label: 'Gold'},
+    {key: 'sheep', label: 'Sheep'},
+    {key: 'waterRock', label: 'Water Rock'},
     {key: 'erase', label: 'Erase'},
 ];
 
@@ -52,7 +60,12 @@ export function BackgroundEditorToolbar({
     shortTree1Count,
     shortTree2Count,
     waterFoamCount,
+    goldCount,
+    sheepCount,
+    waterRockCount,
+    activeSheepMirror,
     onSetTool,
+    onSetSheepMirror,
     onSetDecoAsset,
     onSetGroundVariant,
     onLoadCurrent,
@@ -145,6 +158,19 @@ export function BackgroundEditorToolbar({
                 </>
             )}
 
+            {/* Sheep mirror toggle */}
+            {activeTool === 'sheep' && (
+                <>
+                    <p className={styles.sectionLabel}>Sheep Options</p>
+                    <button
+                        className={activeSheepMirror ? styles.toolButtonActive : styles.toolButton}
+                        onClick={() => onSetSheepMirror(!activeSheepMirror)}
+                    >
+                        {activeSheepMirror ? 'Mirrored ↔' : 'Normal →'}
+                    </button>
+                </>
+            )}
+
             {/* Ground tile variant picker */}
             {activeTool === 'groundVariant' && (
                 <>
@@ -188,6 +214,9 @@ export function BackgroundEditorToolbar({
                 <span className={styles.countBadge}>Short Tree 1: {shortTree1Count}</span>
                 <span className={styles.countBadge}>Short Tree 2: {shortTree2Count}</span>
                 <span className={styles.countBadge}>Water Foam: {waterFoamCount}</span>
+                <span className={styles.countBadge}>Gold: {goldCount}</span>
+                <span className={styles.countBadge}>Sheep: {sheepCount}</span>
+                <span className={styles.countBadge}>Water Rock: {waterRockCount}</span>
             </div>
 
             {/* Actions */}

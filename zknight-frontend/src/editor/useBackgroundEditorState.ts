@@ -1,6 +1,6 @@
 import {useState, useCallback} from 'react';
 import type {Position} from '@/game/types';
-import type {BgTool, BgDecoItem} from './types';
+import type {BgTool, BgDecoItem, SheepItem} from './types';
 import {
     TILE_SIZE,
     BASE_WIDTH,
@@ -19,6 +19,9 @@ import {
     SHORT_TREE_1_POSITIONS as SAVED_ST1,
     SHORT_TREE_2_POSITIONS as SAVED_ST2,
     WATER_FOAM_POSITIONS as SAVED_WF,
+    GOLD_POSITIONS as SAVED_GOLD,
+    SHEEP_POSITIONS as SAVED_SHEEP, // SheepItem[]
+    WATER_ROCK_POSITIONS as SAVED_WR,
     GROUND_TILE_REMOVED as SAVED_GTR,
     GROUND_TILE_VARIANTS as SAVED_GTV,
 } from '@/puzzles/backgroundLayout';
@@ -84,6 +87,14 @@ function hasDecoAt(arr: BgDecoItem[], pos: Position): boolean {
     return arr.some(d => isSamePos(d.pos, pos));
 }
 
+function removeSheepAt(arr: SheepItem[], pos: Position): SheepItem[] {
+    return arr.filter(d => !isSamePos(d.pos, pos));
+}
+
+function hasSheepAt(arr: SheepItem[], pos: Position): boolean {
+    return arr.some(d => isSamePos(d.pos, pos));
+}
+
 function posKey(pos: Position): string {
     return `${pos.x},${pos.y}`;
 }
@@ -102,6 +113,14 @@ function fmtDecoArr(name: string, arr: BgDecoItem[]): string {
         `    {pos: {x: ${d.pos.x}, y: ${d.pos.y}}, asset: '${d.asset}'},`
     ).join('\n');
     return `export const ${name}: BgDecoItem[] = [\n${items}\n];`;
+}
+
+function fmtSheepArr(name: string, arr: SheepItem[]): string {
+    if (arr.length === 0) return `export const ${name}: SheepItem[] = [];`;
+    const items = arr.map(d =>
+        `    {pos: {x: ${d.pos.x}, y: ${d.pos.y}}, mirror: ${d.mirror}},`
+    ).join('\n');
+    return `export const ${name}: SheepItem[] = [\n${items}\n];`;
 }
 
 function fmtGroundVariants(
@@ -126,6 +145,9 @@ function formatExport(
     shortTree1: Position[],
     shortTree2: Position[],
     waterFoam: Position[],
+    gold: Position[],
+    sheep: SheepItem[],
+    waterRock: Position[],
     groundOverrides: Map<string, {col: number; row: number} | null>
 ): string {
     const removed: Position[] = [];
@@ -150,6 +172,11 @@ export interface BgDecoItem {
     asset: string;
 }
 
+export interface SheepItem {
+    pos: Position;
+    mirror: boolean;
+}
+
 ${fmtPosArr('TREE_POSITIONS', trees)}
 
 ${fmtPosArr('BUSH_POSITIONS', bushes)}
@@ -159,6 +186,12 @@ ${fmtPosArr('SHORT_TREE_1_POSITIONS', shortTree1)}
 ${fmtPosArr('SHORT_TREE_2_POSITIONS', shortTree2)}
 
 ${fmtPosArr('WATER_FOAM_POSITIONS', waterFoam)}
+
+${fmtPosArr('GOLD_POSITIONS', gold)}
+
+${fmtSheepArr('SHEEP_POSITIONS', sheep)}
+
+${fmtPosArr('WATER_ROCK_POSITIONS', waterRock)}
 
 ${fmtGroundVariants(removed, variants)}
 
@@ -175,6 +208,10 @@ export function useBackgroundEditorState() {
     const [shortTree1Positions, setShortTree1Positions] = useState<Position[]>([]);
     const [shortTree2Positions, setShortTree2Positions] = useState<Position[]>([]);
     const [waterFoamPositions, setWaterFoamPositions] = useState<Position[]>([]);
+    const [goldPositions, setGoldPositions] = useState<Position[]>([]);
+    const [sheepPositions, setSheepPositions] = useState<SheepItem[]>([]);
+    const [activeSheepMirror, setActiveSheepMirror] = useState(false);
+    const [waterRockPositions, setWaterRockPositions] = useState<Position[]>([]);
     // Map key = "x,y", value = null (removed) | {col,row} (custom variant)
     const [groundOverrides, setGroundOverrides] = useState<Map<string, {col: number; row: number} | null>>(new Map());
 
@@ -183,7 +220,7 @@ export function useBackgroundEditorState() {
     const [activeGroundVariant, setActiveGroundVariant] = useState<{col: number; row: number}>({col: 0, row: 0});
     const [hoveredCell, setHoveredCell] = useState<Position | null>(null);
 
-    /** Remove any decoration at pos (tree, bush, deco, shortTree1/2, waterFoam). Ground tiles are unaffected. */
+    /** Remove any decoration at pos (tree, bush, deco, shortTree1/2, waterFoam, gold, sheep, waterRock). Ground tiles are unaffected. */
     const clearAt = useCallback((pos: Position) => {
         setTreePositions(prev => removePos(prev, pos));
         setBushPositions(prev => removePos(prev, pos));
@@ -191,6 +228,9 @@ export function useBackgroundEditorState() {
         setShortTree1Positions(prev => removePos(prev, pos));
         setShortTree2Positions(prev => removePos(prev, pos));
         setWaterFoamPositions(prev => removePos(prev, pos));
+        setGoldPositions(prev => removePos(prev, pos));
+        setSheepPositions(prev => removeSheepAt(prev, pos));
+        setWaterRockPositions(prev => removePos(prev, pos));
     }, []);
 
     const clickCell = useCallback((pos: Position) => {
@@ -254,6 +294,36 @@ export function useBackgroundEditorState() {
                 }
                 break;
 
+            case 'gold':
+                if (!isValidDecoCell(pos)) return;
+                if (hasPos(goldPositions, pos)) {
+                    setGoldPositions(prev => removePos(prev, pos));
+                } else {
+                    clearAt(pos);
+                    setGoldPositions(prev => [...prev, pos]);
+                }
+                break;
+
+            case 'sheep':
+                if (!isValidDecoCell(pos)) return;
+                if (hasSheepAt(sheepPositions, pos)) {
+                    setSheepPositions(prev => removeSheepAt(prev, pos));
+                } else {
+                    clearAt(pos);
+                    setSheepPositions(prev => [...prev, {pos, mirror: activeSheepMirror}]);
+                }
+                break;
+
+            case 'waterRock':
+                if (!isValidDecoCell(pos)) return;
+                if (hasPos(waterRockPositions, pos)) {
+                    setWaterRockPositions(prev => removePos(prev, pos));
+                } else {
+                    clearAt(pos);
+                    setWaterRockPositions(prev => [...prev, pos]);
+                }
+                break;
+
             case 'groundPaint': {
                 if (!isGroundCell(pos)) return;
                 const key = posKey(pos);
@@ -310,9 +380,10 @@ export function useBackgroundEditorState() {
                 break;
         }
     }, [
-        activeTool, activeDecoAsset, activeGroundVariant,
+        activeTool, activeDecoAsset, activeGroundVariant, activeSheepMirror,
         treePositions, bushPositions, decoItems,
         shortTree1Positions, shortTree2Positions, waterFoamPositions,
+        goldPositions, sheepPositions, waterRockPositions,
         groundOverrides, clearAt,
     ]);
 
@@ -323,6 +394,9 @@ export function useBackgroundEditorState() {
         setShortTree1Positions([]);
         setShortTree2Positions([]);
         setWaterFoamPositions([]);
+        setGoldPositions([]);
+        setSheepPositions([] as SheepItem[]);
+        setWaterRockPositions([]);
         setGroundOverrides(new Map());
     }, []);
 
@@ -333,6 +407,9 @@ export function useBackgroundEditorState() {
         setShortTree1Positions([...SAVED_ST1]);
         setShortTree2Positions([...SAVED_ST2]);
         setWaterFoamPositions([...SAVED_WF]);
+        setGoldPositions([...SAVED_GOLD]);
+        setSheepPositions(SAVED_SHEEP.map(s => ({...s})));
+        setWaterRockPositions([...SAVED_WR]);
 
         const overrides = new Map<string, {col: number; row: number} | null>();
         for (const pos of SAVED_GTR) {
@@ -348,9 +425,10 @@ export function useBackgroundEditorState() {
         return formatExport(
             treePositions, bushPositions, decoItems,
             shortTree1Positions, shortTree2Positions, waterFoamPositions,
+            goldPositions, sheepPositions, waterRockPositions,
             groundOverrides
         );
-    }, [treePositions, bushPositions, decoItems, shortTree1Positions, shortTree2Positions, waterFoamPositions, groundOverrides]);
+    }, [treePositions, bushPositions, decoItems, shortTree1Positions, shortTree2Positions, waterFoamPositions, goldPositions, sheepPositions, waterRockPositions, groundOverrides]);
 
     return {
         treePositions,
@@ -359,6 +437,11 @@ export function useBackgroundEditorState() {
         shortTree1Positions,
         shortTree2Positions,
         waterFoamPositions,
+        goldPositions,
+        sheepPositions,
+        waterRockPositions,
+        activeSheepMirror,
+        setActiveSheepMirror,
         groundOverrides,
         activeTool,
         setActiveTool,

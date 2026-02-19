@@ -2,9 +2,15 @@ import type {Position} from '@/game/types';
 
 // ── Background Editor ──────────────────────────────────────────────
 
+export interface SheepItem {
+    pos: Position;
+    mirror: boolean;
+}
+
 export type BgTool =
     | 'tree' | 'bush' | 'deco' | 'erase'
     | 'shortTree1' | 'shortTree2' | 'waterFoam'
+    | 'gold' | 'sheep' | 'waterRock'
     | 'groundPaint' | 'groundErase' | 'groundVariant';
 
 export interface BgDecoItem {

@@ -16,6 +16,11 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
         shortTree1Positions,
         shortTree2Positions,
         waterFoamPositions,
+        goldPositions,
+        sheepPositions,
+        waterRockPositions,
+        activeSheepMirror,
+        setActiveSheepMirror,
         groundOverrides,
         activeTool,
         setActiveTool,
@@ -41,6 +46,10 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
                     shortTree1Positions={shortTree1Positions}
                     shortTree2Positions={shortTree2Positions}
                     waterFoamPositions={waterFoamPositions}
+                    goldPositions={goldPositions}
+                    sheepPositions={sheepPositions}
+                    activeSheepMirror={activeSheepMirror}
+                    waterRockPositions={waterRockPositions}
                     groundOverrides={groundOverrides}
                     activeTool={activeTool}
                     activeDecoAsset={activeDecoAsset}
@@ -61,6 +70,11 @@ export function BackgroundEditor({onBack}: BackgroundEditorProps) {
                 shortTree1Count={shortTree1Positions.length}
                 shortTree2Count={shortTree2Positions.length}
                 waterFoamCount={waterFoamPositions.length}
+                goldCount={goldPositions.length}
+                sheepCount={sheepPositions.length}
+                activeSheepMirror={activeSheepMirror}
+                onSetSheepMirror={setActiveSheepMirror}
+                waterRockCount={waterRockPositions.length}
                 onSetTool={setActiveTool}
                 onSetDecoAsset={setActiveDecoAsset}
                 onSetGroundVariant={setActiveGroundVariant}
