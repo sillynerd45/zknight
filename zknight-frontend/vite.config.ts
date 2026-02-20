@@ -18,6 +18,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc', 'buffer'],
+    needsInterop: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

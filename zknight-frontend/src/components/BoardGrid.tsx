@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
 import { TILE_SIZE, BG_GRID_W, BG_GRID_H } from '@/game/constants';
 import type { Puzzle } from '@/game/types';
 import { GroundTile } from '@/components/GroundTile';
 import { StaticSprite } from '@/components/StaticSprite';
-import { ROCK_ASSETS } from '@/sprites/staticAssets';
+import { WALL_ASSETS } from '@/sprites/staticAssets';
 import { getAutoGroundTileKey } from '@/sprites/groundTiles';
 import { GROUND_TILE_REMOVED, GROUND_TILE_VARIANTS } from '@/puzzles/backgroundLayout';
 
@@ -15,6 +16,19 @@ interface BoardGridProps {
 }
 
 export function BoardGrid({ puzzle, groundOriginX, groundOriginY, playOriginX, playOriginY }: BoardGridProps) {
+  // Assign a random wall asset to each wall position once per unique wall layout.
+  // The memo key is the serialized wall positions, so assets re-randomize only
+  // when the actual walls change (i.e. a new puzzle is loaded).
+  const wallAssetMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const wall of puzzle.walls) {
+      const key = `${wall.x},${wall.y}`;
+      map.set(key, WALL_ASSETS[Math.floor(Math.random() * WALL_ASSETS.length)]);
+    }
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzle.walls.map(w => `${w.x},${w.y}`).join('|')]);
+
   const groundTiles: React.ReactNode[] = [];
 
   // Default 15×11 BG grid
@@ -44,11 +58,11 @@ export function BoardGrid({ puzzle, groundOriginX, groundOriginY, playOriginX, p
   }
 
   const wallSprites = puzzle.walls.map((wall) => {
-    const rockIdx = (wall.x * 7 + wall.y * 13) % ROCK_ASSETS.length;
+    const src = wallAssetMap.get(`${wall.x},${wall.y}`) ?? WALL_ASSETS[0];
     return (
       <StaticSprite
         key={`wall-${wall.x}-${wall.y}`}
-        src={ROCK_ASSETS[rockIdx]}
+        src={src}
         x={wall.x}
         y={wall.y}
         zIndex={wall.y}

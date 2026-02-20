@@ -30,7 +30,7 @@ pub struct Puzzle {
     pub knight_b_start: Position,
     pub goal_a: Position,
     pub goal_b: Position,
-    pub walls: Vec<Position>,       // <= 16
+    pub walls: Vec<Position>,       // <= 26 (circuit cap)
     pub static_tnt: Vec<Position>,  // <= 8
     pub moving_barrels: Vec<MovingBarrel>, // <= 2
     pub min_ticks: u32,             // shortest known solution

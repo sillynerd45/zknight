@@ -1,6 +1,6 @@
 import { SPRITE_MAP } from './spriteMap';
 import { GROUND_TILE_MAP } from './groundTiles';
-import { ROCK_ASSETS, DECO_ASSETS, WATER_TILE, TARGET_TILES } from './staticAssets';
+import { ROCK_ASSETS, DECO_ASSETS, WATER_TILE, TARGET_TILES, WOOD_ASSET } from './staticAssets';
 
 function loadImage(src: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -28,6 +28,7 @@ export function preloadSprites(): Promise<void> {
     sources.push(TARGET_TILES.knightB);
     sources.push(...ROCK_ASSETS);
     sources.push(...DECO_ASSETS);
+    sources.push(WOOD_ASSET);
 
     return Promise.all(sources.map(loadImage)).then(() => undefined);
 }

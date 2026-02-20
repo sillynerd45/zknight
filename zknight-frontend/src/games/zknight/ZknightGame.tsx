@@ -18,6 +18,7 @@ import { OnChainGameProvider, useOnChainGameContext } from './OnChainGameContext
 import { useWalletStandalone } from '@/hooks/useWalletStandalone';
 import { ZknightService } from './zknightService';
 import { networks } from './bindings';
+import { useMusic } from './useMusic';
 
 type GameView = 'lobby' | 'game' | 'editor';
 
@@ -262,6 +263,8 @@ export function ZknightGame() {
   const [contractPuzzle, setContractPuzzle] = useState<ContractPuzzle | null>(null);
   const [isPlayer1, setIsPlayer1] = useState(false);
   const [service] = useState(() => new ZknightService(networks.testnet.contractId));
+
+  useMusic(view);
 
   const handleLeaveEditor = useCallback(() => {
     setEditorSubView(null);
