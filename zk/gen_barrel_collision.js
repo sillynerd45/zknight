@@ -13,7 +13,7 @@ const moves = ["4", "4", "4"]; // 3 NoOp ticks
 // Pad to 512
 while (moves.length < 512) moves.push("4");
 
-const walls = Array(16).fill(OOB);
+const walls = Array(26).fill(OOB);
 const static_tnt = Array(8).fill(OOB);
 
 // Barrel path that will collide with knight
@@ -32,6 +32,8 @@ const input = {
   grid_height: "7",
   knight_a_start: ["5", "3"], // Will be hit by barrel
   knight_b_start: ["10", "6"], // Safe position
+  goal_a: ["10", "6"],
+  goal_b: ["5", "3"],
   walls,
   static_tnt,
   barrel_paths: [barrel1_path, barrel2_path],

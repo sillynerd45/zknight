@@ -12,7 +12,7 @@ const moves = ["3"]; // Right
 while (moves.length < 512) moves.push("4");
 
 // No walls, no obstacles - just knights crossing
-const walls = Array(16).fill(OOB);
+const walls = Array(26).fill(OOB);
 const static_tnt = Array(8).fill(OOB);
 const barrel_path = Array(16).fill(OOB);
 
@@ -21,6 +21,8 @@ const input = {
   grid_height: "7",
   knight_a_start: ["4", "3"], // Adjacent to B
   knight_b_start: ["5", "3"], // Adjacent to A
+  goal_a: ["5", "3"],
+  goal_b: ["4", "3"],
   walls,
   static_tnt,
   barrel_paths: [barrel_path, barrel_path],

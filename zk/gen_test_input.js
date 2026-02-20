@@ -12,7 +12,7 @@ for (let i = 0; i < 6; i++) moves.push("1");
 while (moves.length < 512) moves.push("4");
 
 const walls = [];
-for (let i = 0; i < 16; i++) walls.push(OOB);
+for (let i = 0; i < 26; i++) walls.push(OOB);
 
 const static_tnt = [];
 for (let i = 0; i < 8; i++) static_tnt.push(OOB);
@@ -25,6 +25,8 @@ const input = {
   grid_height: "7",
   knight_a_start: ["0", "0"],
   knight_b_start: ["10", "6"],
+  goal_a: ["10", "6"],
+  goal_b: ["0", "0"],
   walls,
   static_tnt,
   barrel_paths: [barrel_path, barrel_path],

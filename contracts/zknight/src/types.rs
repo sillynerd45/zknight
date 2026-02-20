@@ -28,6 +28,8 @@ pub struct Puzzle {
     pub grid_height: u32,           // always 7
     pub knight_a_start: Position,
     pub knight_b_start: Position,
+    pub goal_a: Position,
+    pub goal_b: Position,
     pub walls: Vec<Position>,       // <= 16
     pub static_tnt: Vec<Position>,  // <= 8
     pub moving_barrels: Vec<MovingBarrel>, // <= 2

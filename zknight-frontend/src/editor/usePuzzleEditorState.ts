@@ -25,6 +25,8 @@ export function usePuzzleEditorState() {
     const [grid, setGrid] = useState<EditorCell[][]>(createEmptyGrid);
     const [knightA, setKnightA] = useState<Position | null>(null);
     const [knightB, setKnightB] = useState<Position | null>(null);
+    const [goalA, setGoalA] = useState<Position | null>(null);
+    const [goalB, setGoalB] = useState<Position | null>(null);
     const [barrelPaths, setBarrelPaths] = useState<[Position[], Position[]]>([[], []]);
     const [activeTool, setActiveTool] = useState<EditorTool>('wall');
     const [activeWallAsset, setActiveWallAsset] = useState<string>(ROCK_ASSETS[0]);
@@ -89,6 +91,16 @@ export function usePuzzleEditorState() {
                 setKnightB(pos);
                 break;
 
+            case 'goalA':
+                if (goalB && isSamePos(goalB, pos)) setGoalB(null);
+                setGoalA(pos);
+                break;
+
+            case 'goalB':
+                if (goalA && isSamePos(goalA, pos)) setGoalA(null);
+                setGoalB(pos);
+                break;
+
             case 'barrelPath0':
             case 'barrelPath1': {
                 const idx = activeTool === 'barrelPath0' ? 0 : 1;
@@ -128,12 +140,14 @@ export function usePuzzleEditorState() {
                 removeFromBarrelPaths(pos);
                 break;
         }
-    }, [activeTool, activeWallAsset, knightA, knightB, grid, removeFromBarrelPaths]);
+    }, [activeTool, activeWallAsset, knightA, knightB, goalA, goalB, grid, removeFromBarrelPaths]);
 
     const clearGrid = useCallback(() => {
         setGrid(createEmptyGrid());
         setKnightA(null);
         setKnightB(null);
+        setGoalA(null);
+        setGoalB(null);
         setBarrelPaths([[], []]);
     }, []);
 
@@ -165,9 +179,11 @@ export function usePuzzleEditorState() {
         }
         setGrid(newGrid);
 
-        // Set knight positions
+        // Set knight and goal positions
         setKnightA(puzzle.knightA);
         setKnightB(puzzle.knightB);
+        setGoalA(puzzle.goalA);
+        setGoalB(puzzle.goalB);
 
         // Extract barrel paths
         const paths: [Position[], Position[]] = [[], []];
@@ -191,6 +207,8 @@ export function usePuzzleEditorState() {
         grid,
         knightA,
         knightB,
+        goalA,
+        goalB,
         barrelPaths,
         activeTool,
         activeWallAsset,

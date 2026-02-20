@@ -72,19 +72,21 @@ pub fn verify_groth16(env: &Env, vk: &VerificationKeys, proof: &Bytes, inputs: &
 /// 1. out_tick_count (= tick_count)
 /// 2. out_win (= 1, always true for valid proof)
 ///
-/// ## Inputs (122):
+/// ## Inputs (126):
 /// 3. grid_width (1)
 /// 4. grid_height (1)
 /// 5-6. knight_a_start (2: x, y)
 /// 7-8. knight_b_start (2: x, y)
-/// 9-40. walls (32: 16 positions × 2 coords, padded with {11, 7})
-/// 41-56. static_tnt (16: 8 positions × 2 coords, padded with {11, 7})
-/// 57-120. barrel_paths (64: 2 barrels × 16 steps × 2 coords, padded with {11, 7})
-/// 121-122. barrel_path_lengths (2: lengths for 2 barrels)
-/// 123. tick_count (1)
-/// 124. puzzle_id (1)
+/// 9-10. goal_a (2: x, y)
+/// 11-12. goal_b (2: x, y)
+/// 13-64. walls (52: 26 positions × 2 coords, padded with {11, 7})
+/// 65-80. static_tnt (16: 8 positions × 2 coords, padded with {11, 7})
+/// 81-144. barrel_paths (64: 2 barrels × 16 steps × 2 coords, padded with {11, 7})
+/// 145-146. barrel_path_lengths (2: lengths for 2 barrels)
+/// 147. tick_count (1)
+/// 148. puzzle_id (1)
 ///
-/// Total: 3 + 122 = 125
+/// Total: 3 + 146 = 149
 pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U256> {
     let mut inputs = Vec::new(env);
 
@@ -104,8 +106,14 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
     inputs.push_back(U256::from_u32(env, puzzle.knight_b_start.x));
     inputs.push_back(U256::from_u32(env, puzzle.knight_b_start.y));
 
-    // 3. Walls (padded to 16 with out-of-bounds sentinel {11, 7})
-    for i in 0..16 {
+    // 3. Goal positions
+    inputs.push_back(U256::from_u32(env, puzzle.goal_a.x));
+    inputs.push_back(U256::from_u32(env, puzzle.goal_a.y));
+    inputs.push_back(U256::from_u32(env, puzzle.goal_b.x));
+    inputs.push_back(U256::from_u32(env, puzzle.goal_b.y));
+
+    // 4. Walls (padded to 26 with out-of-bounds sentinel {11, 7})
+    for i in 0..26 {
         if let Some(wall) = puzzle.walls.get(i) {
             inputs.push_back(U256::from_u32(env, wall.x));
             inputs.push_back(U256::from_u32(env, wall.y));
@@ -115,7 +123,7 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
         }
     }
 
-    // 4. Static TNT (padded to 8 with {11, 7})
+    // 5. Static TNT (padded to 8 with {11, 7})
     for i in 0..8 {
         if let Some(tnt) = puzzle.static_tnt.get(i) {
             inputs.push_back(U256::from_u32(env, tnt.x));
@@ -126,7 +134,7 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
         }
     }
 
-    // 5. Barrel paths (2 barrels × 16 steps × 2 coords)
+    // 6. Barrel paths (2 barrels × 16 steps × 2 coords)
     for b in 0..2 {
         if let Some(barrel) = puzzle.moving_barrels.get(b) {
             for s in 0..16 {
@@ -147,7 +155,7 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
         }
     }
 
-    // 6. Barrel path lengths
+    // 7. Barrel path lengths
     // Non-existent barrels use length 1 (not 0) to match circuit/frontend convention
     // (avoids division by zero in circuit modular arithmetic)
     for b in 0..2 {
@@ -158,10 +166,10 @@ pub fn build_public_inputs(env: &Env, puzzle: &Puzzle, tick_count: u32) -> Vec<U
         }
     }
 
-    // 7. Tick count (actual solution length)
+    // 8. Tick count (actual solution length)
     inputs.push_back(U256::from_u32(env, tick_count));
 
-    // 8. Puzzle ID (binds proof to specific puzzle)
+    // 9. Puzzle ID (binds proof to specific puzzle)
     inputs.push_back(U256::from_u32(env, puzzle.id));
 
     inputs
@@ -216,6 +224,40 @@ pub fn compute_puzzle_hash(env: &Env, puzzle: &Puzzle) -> BytesN<32> {
             env,
             hash.clone(),
             U256::from_u32(env, puzzle.knight_b_start.y),
+        ],
+    );
+
+    // Hash goal positions
+    hash = poseidon2_hash::<4, BnScalar>(
+        env,
+        &vec![
+            env,
+            hash.clone(),
+            U256::from_u32(env, puzzle.goal_a.x),
+        ],
+    );
+    hash = poseidon2_hash::<4, BnScalar>(
+        env,
+        &vec![
+            env,
+            hash.clone(),
+            U256::from_u32(env, puzzle.goal_a.y),
+        ],
+    );
+    hash = poseidon2_hash::<4, BnScalar>(
+        env,
+        &vec![
+            env,
+            hash.clone(),
+            U256::from_u32(env, puzzle.goal_b.x),
+        ],
+    );
+    hash = poseidon2_hash::<4, BnScalar>(
+        env,
+        &vec![
+            env,
+            hash.clone(),
+            U256::from_u32(env, puzzle.goal_b.y),
         ],
     );
 

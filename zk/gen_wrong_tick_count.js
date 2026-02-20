@@ -12,7 +12,7 @@ const moves = ["3", "3"]; // 2 moves
 // Pad to 512
 while (moves.length < 512) moves.push("4");
 
-const walls = Array(16).fill(OOB);
+const walls = Array(26).fill(OOB);
 const static_tnt = Array(8).fill(OOB);
 const barrel_path = Array(16).fill(OOB);
 

@@ -94,18 +94,18 @@ template Clamp() {
 // ----------------------------------------------------------------------------
 template IsBlockedByWall() {
     signal input pos[2];
-    signal input walls[16][2];
+    signal input walls[26][2];
     signal output blocked;
 
-    component xEquals[16];
-    component yEquals[16];
-    component ands[16];
+    component xEquals[26];
+    component yEquals[26];
+    component ands[26];
 
-    signal blockFlags[16];
-    signal sum[17];
+    signal blockFlags[26];
+    signal sum[27];
     sum[0] <== 0;
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 26; i++) {
         xEquals[i] = IsEqual();
         xEquals[i].in[0] <== pos[0];
         xEquals[i].in[1] <== walls[i][0];
@@ -124,7 +124,7 @@ template IsBlockedByWall() {
 
     // blocked = 1 if sum > 0, else 0
     component isBlocked = GreaterThan(8);
-    isBlocked.in[0] <== sum[16];
+    isBlocked.in[0] <== sum[26];
     isBlocked.in[1] <== 0;
 
     blocked <== isBlocked.out;
@@ -163,7 +163,9 @@ template ZKnight() {
     signal input grid_height;                   // always 7
     signal input knight_a_start[2];             // [x, y]
     signal input knight_b_start[2];             // [x, y]
-    signal input walls[16][2];                  // padded with {11, 7}
+    signal input goal_a[2];                     // [x, y] — where Knight A must end
+    signal input goal_b[2];                     // [x, y] — where Knight B must end
+    signal input walls[26][2];                  // padded with {11, 7}
     signal input static_tnt[8][2];              // padded with {11, 7}
     signal input barrel_paths[2][16][2];        // [barrel][step][x/y]
     signal input barrel_path_lengths[2];        // actual lengths <= 16
@@ -333,7 +335,7 @@ template ZKnight() {
         wallCheckA[t] = IsBlockedByWall();
         wallCheckA[t].pos[0] <== boundedA[t][0];
         wallCheckA[t].pos[1] <== boundedA[t][1];
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < 26; i++) {
             wallCheckA[t].walls[i][0] <== walls[i][0];
             wallCheckA[t].walls[i][1] <== walls[i][1];
         }
@@ -341,7 +343,7 @@ template ZKnight() {
         wallCheckB[t] = IsBlockedByWall();
         wallCheckB[t].pos[0] <== boundedB[t][0];
         wallCheckB[t].pos[1] <== boundedB[t][1];
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < 26; i++) {
             wallCheckB[t].walls[i][0] <== walls[i][0];
             wallCheckB[t].walls[i][1] <== walls[i][1];
         }
@@ -491,18 +493,18 @@ template ZKnight() {
     finalB[0] <== finalBx[513];
     finalB[1] <== finalBy[513];
 
-    // Assert win condition: A reached B's start, B reached A's start
+    // Assert win condition: A reached goal_a, B reached goal_b
     component winCheckA = PositionEquals();
     winCheckA.a[0] <== finalA[0];
     winCheckA.a[1] <== finalA[1];
-    winCheckA.b[0] <== knight_b_start[0];
-    winCheckA.b[1] <== knight_b_start[1];
+    winCheckA.b[0] <== goal_a[0];
+    winCheckA.b[1] <== goal_a[1];
 
     component winCheckB = PositionEquals();
     winCheckB.a[0] <== finalB[0];
     winCheckB.a[1] <== finalB[1];
-    winCheckB.b[0] <== knight_a_start[0];
-    winCheckB.b[1] <== knight_a_start[1];
+    winCheckB.b[0] <== goal_b[0];
+    winCheckB.b[1] <== goal_b[1];
 
     winCheckA.equal === 1;
     winCheckB.equal === 1;
@@ -523,6 +525,8 @@ component main {public [
     grid_height,
     knight_a_start,
     knight_b_start,
+    goal_a,
+    goal_b,
     walls,
     static_tnt,
     barrel_paths,

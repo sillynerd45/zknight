@@ -415,9 +415,9 @@ impl ZknightContract {
         let public_inputs = build_public_inputs(&env, &puzzle, tick_count);
 
         // 3. Verify Groth16 proof
-        // Build array of public inputs for verification (125 = 3 outputs + 122 inputs)
+        // Build array of public inputs for verification (149 = 3 outputs + 146 inputs)
         let inputs_array =
-            core::array::from_fn::<U256, 125, _>(|i| public_inputs.get(i as u32).unwrap());
+            core::array::from_fn::<U256, 149, _>(|i| public_inputs.get(i as u32).unwrap());
 
         if !verify_groth16(&env, &VERIFICATION_KEY, &proof, &inputs_array) {
             return Err(Error::InvalidProof);

@@ -43,7 +43,9 @@
       "Bash(python3:*)",
       "Bash(git -C \"D:/Project/Stellar/zk-gaming/ZKnight\" diff --stat HEAD)",
       "Bash(git -C \"D:/Project/Stellar/zk-gaming/ZKnight\" log --oneline -5)",
-      "Bash(git -C \"D:/Project/Stellar/zk-gaming/ZKnight\" diff HEAD -- zknight-frontend/src/sprites/spriteMap.ts zknight-frontend/src/editor/types.ts zknight-frontend/src/hooks/useAnimatedSprite.ts)"
+      "Bash(git -C \"D:/Project/Stellar/zk-gaming/ZKnight\" diff HEAD -- zknight-frontend/src/sprites/spriteMap.ts zknight-frontend/src/editor/types.ts zknight-frontend/src/hooks/useAnimatedSprite.ts)",
+      "Bash({)",
+      "Bash(npm run setup)"
     ]
   }
 }

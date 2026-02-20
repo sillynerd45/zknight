@@ -24,6 +24,8 @@ const TOOLS: {key: EditorTool; label: string}[] = [
     {key: 'staticTNT', label: 'TNT'},
     {key: 'knightA', label: 'Knight A'},
     {key: 'knightB', label: 'Knight B'},
+    {key: 'goalA', label: 'Goal A'},
+    {key: 'goalB', label: 'Goal B'},
     {key: 'barrelPath0', label: 'Barrel 0'},
     {key: 'barrelPath1', label: 'Barrel 1'},
     {key: 'erase', label: 'Erase'},

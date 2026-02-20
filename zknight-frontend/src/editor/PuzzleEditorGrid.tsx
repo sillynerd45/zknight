@@ -127,8 +127,7 @@ export function PuzzleEditorGrid({state, onCellClick}: PuzzleEditorGridProps) {
         }
     }
 
-    // Goal tiles — only show when BOTH knights are placed
-    const bothKnightsPlaced = state.knightA !== null && state.knightB !== null;
+    // (Goal tiles are rendered from explicit state.goalA / state.goalB below)
 
     // Barrel path overlays
     const barrelPathOverlays = state.barrelPaths.map((path, barrelIdx) => {
@@ -231,6 +230,14 @@ export function PuzzleEditorGrid({state, onCellClick}: PuzzleEditorGridProps) {
                 return wrapOpacity(
                     <Sprite spriteKey="knightB" animation="idle" x={x} y={y} zIndex={100} mirror />
                 );
+            case 'goalA':
+                return wrapOpacity(
+                    <StaticSprite src={TARGET_TILES.knightA} x={x} y={y} zIndex={100} />
+                );
+            case 'goalB':
+                return wrapOpacity(
+                    <StaticSprite src={TARGET_TILES.knightB} x={x} y={y} zIndex={100} />
+                );
             default:
                 return null;
         }
@@ -281,14 +288,12 @@ export function PuzzleEditorGrid({state, onCellClick}: PuzzleEditorGridProps) {
                     pointerEvents: 'none',
                 }}
             >
-                {/* Goal tiles — only when both knights are placed */}
-                {bothKnightsPlaced && (
-                    <>
-                        {/* goalA = where Knight A needs to go = Knight B's start */}
-                        <StaticSprite src={TARGET_TILES.knightA} x={state.knightB!.x} y={state.knightB!.y} zIndex={state.knightB!.y} />
-                        {/* goalB = where Knight B needs to go = Knight A's start */}
-                        <StaticSprite src={TARGET_TILES.knightB} x={state.knightA!.x} y={state.knightA!.y} zIndex={state.knightA!.y} />
-                    </>
+                {/* Goal tiles — shown independently when placed */}
+                {state.goalA && (
+                    <StaticSprite src={TARGET_TILES.knightA} x={state.goalA.x} y={state.goalA.y} zIndex={state.goalA.y} />
+                )}
+                {state.goalB && (
+                    <StaticSprite src={TARGET_TILES.knightB} x={state.goalB.x} y={state.goalB.y} zIndex={state.goalB.y} />
                 )}
 
                 {/* Walls and static TNT */}

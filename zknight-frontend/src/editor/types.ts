@@ -36,6 +36,8 @@ export type EditorTool =
     | 'staticTNT'
     | 'knightA'
     | 'knightB'
+    | 'goalA'
+    | 'goalB'
     | 'barrelPath0'
     | 'barrelPath1'
     | 'erase';
@@ -56,6 +58,8 @@ export interface PuzzleEditorState {
     grid: EditorCell[][];
     knightA: Position | null;
     knightB: Position | null;
+    goalA: Position | null;
+    goalB: Position | null;
     barrelPaths: [Position[], Position[]];
     activeTool: EditorTool;
     activeWallAsset: string;

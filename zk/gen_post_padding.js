@@ -32,7 +32,7 @@ while (moves.length < 512) moves.push("4");
 // This won't affect the outcome since circuit stops processing at tick_count
 moves[10] = "0"; // Up move at position 10 (well after tick_count=2)
 
-const walls = Array(16).fill(OOB);
+const walls = Array(26).fill(OOB);
 const static_tnt = Array(8).fill(OOB);
 const barrel_path = Array(16).fill(OOB);
 
@@ -41,6 +41,8 @@ const input = {
   grid_height: "7",
   knight_a_start: ["0", "0"], // Diagonal starting positions
   knight_b_start: ["1", "1"], // One step diagonally away
+  goal_a: ["1", "1"],
+  goal_b: ["0", "0"],
   walls,
   static_tnt,
   barrel_paths: [barrel_path, barrel_path],

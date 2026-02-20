@@ -300,6 +300,8 @@ export function OnChainGameProvider({ children, playerAddress, signer, service }
             moving_barrels: puzzle.moving_barrels,
             knight_a_start: puzzle.knight_a_start,
             knight_b_start: puzzle.knight_b_start,
+            goal_a: puzzle.goal_a,
+            goal_b: puzzle.goal_b,
           },
           tick_count: tickCount,
         };

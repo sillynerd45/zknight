@@ -31,7 +31,9 @@ const ZKEY_PATH = '/zk/zknight_final.zkey';
  *   signal input grid_height;              // scalar (always 7)
  *   signal input knight_a_start[2];        // [x, y]
  *   signal input knight_b_start[2];        // [x, y]
- *   signal input walls[16][2];             // padded with OOB [grid_width, grid_height]
+ *   signal input goal_a[2];               // [x, y] — where Knight A must end
+ *   signal input goal_b[2];               // [x, y] — where Knight B must end
+ *   signal input walls[26][2];             // padded with OOB [grid_width, grid_height]
  *   signal input static_tnt[8][2];         // padded with OOB
  *   signal input barrel_paths[2][16][2];   // [barrel][step][x/y]
  *   signal input barrel_path_lengths[2];   // actual lengths <= 16
@@ -50,7 +52,7 @@ function buildCircuitInput(moves, puzzle, tick_count) {
   for (const w of (puzzle.walls || [])) {
     walls.push([String(w.x), String(w.y)]);
   }
-  while (walls.length < 16) {
+  while (walls.length < 26) {
     walls.push(OOB.slice());
   }
 
@@ -94,6 +96,8 @@ function buildCircuitInput(moves, puzzle, tick_count) {
     grid_height: String(grid_height),
     knight_a_start: [String(puzzle.knight_a_start.x), String(puzzle.knight_a_start.y)],
     knight_b_start: [String(puzzle.knight_b_start.x), String(puzzle.knight_b_start.y)],
+    goal_a: [String(puzzle.goal_a.x), String(puzzle.goal_a.y)],
+    goal_b: [String(puzzle.goal_b.x), String(puzzle.goal_b.y)],
     walls,
     static_tnt,
     barrel_paths,

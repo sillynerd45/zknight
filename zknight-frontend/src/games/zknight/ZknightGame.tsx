@@ -236,12 +236,12 @@ function contractPuzzleToFrontend(contractPuzzle: ContractPuzzle): Puzzle {
       y: contractPuzzle.knight_b_start.y,
     },
     goalA: {
-      x: contractPuzzle.knight_b_start.x,
-      y: contractPuzzle.knight_b_start.y,
+      x: contractPuzzle.goal_a.x,
+      y: contractPuzzle.goal_a.y,
     },
     goalB: {
-      x: contractPuzzle.knight_a_start.x,
-      y: contractPuzzle.knight_a_start.y,
+      x: contractPuzzle.goal_b.x,
+      y: contractPuzzle.goal_b.y,
     },
     walls: contractPuzzle.walls.map(w => ({ x: w.x, y: w.y })),
     staticTNT: contractPuzzle.static_tnt.map(t => ({ x: t.x, y: t.y })),

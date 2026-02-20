@@ -24,6 +24,16 @@ export function buildPuzzleFromEditor(state: PuzzleEditorState): ExportResult {
 
     if (!state.knightA) errors.push('Knight A is not placed.');
     if (!state.knightB) errors.push('Knight B is not placed.');
+    if (!state.goalA) errors.push('Goal A is not placed.');
+    if (!state.goalB) errors.push('Goal B is not placed.');
+
+    if (state.knightA && state.knightB && state.goalA && state.goalB) {
+        const positions = [state.knightA, state.knightB, state.goalA, state.goalB];
+        const keys = positions.map(p => `${p.x},${p.y}`);
+        if (new Set(keys).size < 4) {
+            errors.push('Knight A, Knight B, Goal A, and Goal B must all be on different cells.');
+        }
+    }
 
     for (let i = 0; i < 2; i++) {
         const path = state.barrelPaths[i];
@@ -60,8 +70,8 @@ export function buildPuzzleFromEditor(state: PuzzleEditorState): ExportResult {
         gridHeight: PLAY_GRID_H,
         knightA: state.knightA!,
         knightB: state.knightB!,
-        goalA: state.knightB!,  // A's goal is B's start
-        goalB: state.knightA!,  // B's goal is A's start
+        goalA: state.goalA!,
+        goalB: state.goalB!,
         walls,
         staticTNT,
         movingTNT,
