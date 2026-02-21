@@ -21,7 +21,7 @@ importScripts('https://cdn.jsdelivr.net/npm/snarkjs@0.7.6/build/snarkjs.min.js')
 
 // Paths to WASM and zkey files
 const WASM_PATH = '/zk/zknight.wasm';
-const ZKEY_PATH = '/zk/zknight_final.zkey';
+const ZKEY_PATH = 'https://github.com/sillynerd45/zknight/releases/download/zk-assets-v1/zknight_final.zkey';
 
 /**
  * Build the full circuit input matching the ZKnight circom template.
