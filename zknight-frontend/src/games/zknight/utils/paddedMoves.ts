@@ -10,6 +10,7 @@
  */
 
 import type { MoveValue } from '@/game/types';
+import { MAX_TICKS } from '@/game/constants';
 
 /** NoOp move value for padding */
 const NO_OP: MoveValue = 4;
@@ -23,7 +24,7 @@ const NO_OP: MoveValue = 4;
  */
 export function padMoveHistory(
   tickHistory: MoveValue[],
-  maxTicks: number = 512
+  maxTicks: number = MAX_TICKS
 ): number[] {
   if (tickHistory.length > maxTicks) {
     throw new Error(

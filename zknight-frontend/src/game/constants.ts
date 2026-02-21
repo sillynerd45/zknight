@@ -7,3 +7,5 @@ export const BASE_HEIGHT = 900;
 export const BG_PADDING_TILES = 2;
 export const BG_GRID_W = PLAY_GRID_W + BG_PADDING_TILES * 2;
 export const BG_GRID_H = PLAY_GRID_H + BG_PADDING_TILES * 2;
+// ZK circuit hard limit — moves[512] is the circuit's private input array
+export const MAX_TICKS = 512;

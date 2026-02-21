@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameContext } from '@/context/GameContext';
+import { MAX_TICKS } from '@/game/constants';
 
 const TIME_LIMIT_MS = 5 * 60 * 1000; // 5 minutes = 300,000ms
 
@@ -13,12 +14,22 @@ function formatTime(ms: number): string {
 
 export function GameHUD() {
   const { state, dispatch } = useGameContext();
-  const { startTime, gameStatus, turnCount } = state;
+  const { startTime, gameStatus, turnCount, tickCount } = state;
   const [elapsed, setElapsed] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
+  const [tickTimedOut, setTickTimedOut] = useState(false);
+  // Frozen HUD values — captured at timeout so RESET doesn't flash them to 0
+  const [frozenTurnCount, setFrozenTurnCount] = useState(0);
+  const [frozenTickCount, setFrozenTickCount] = useState(0);
   const rafRef = useRef<number>(0);
-  // ref prevents double-dispatch across RAF frames before React re-renders
+  // refs prevent double-dispatch across async boundaries before React re-renders
   const timedOutRef = useRef(false);
+  const tickTimedOutRef = useRef(false);
+  // Keep latest counters accessible from RAF closure
+  const turnCountRef = useRef(turnCount);
+  const tickCountRef = useRef(tickCount);
+  turnCountRef.current = turnCount;
+  tickCountRef.current = tickCount;
 
   useEffect(() => {
     if (!startTime || gameStatus !== 'playing') return;
@@ -28,6 +39,8 @@ export function GameHUD() {
       if (newElapsed >= TIME_LIMIT_MS && !timedOutRef.current) {
         timedOutRef.current = true;
         setTimedOut(true);
+        setFrozenTurnCount(turnCountRef.current);
+        setFrozenTickCount(tickCountRef.current);
         dispatch({ type: 'RESET' });
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -43,9 +56,22 @@ export function GameHUD() {
     }
   }, [gameStatus, startTime]);
 
+  // Detect tick timeout: reducer sets gameStatus='timeout', we auto-reset and show overlay
+  useEffect(() => {
+    if (gameStatus === 'timeout' && !tickTimedOutRef.current) {
+      tickTimedOutRef.current = true;
+      setTickTimedOut(true);
+      setFrozenTurnCount(turnCountRef.current);
+      setFrozenTickCount(tickCountRef.current);
+      dispatch({ type: 'RESET' });
+    }
+  }, [gameStatus, dispatch]);
+
   const handleRetry = () => {
     timedOutRef.current = false;
     setTimedOut(false);
+    tickTimedOutRef.current = false;
+    setTickTimedOut(false);
     dispatch({ type: 'START' });
   };
 
@@ -59,25 +85,46 @@ export function GameHUD() {
     timerColor = '#F2D06B';
   }
 
+  // Use frozen values when timeout overlay is visible (RESET zeroes the live state)
+  const showTimeoutOverlay = timedOut || tickTimedOut;
+  const displayTurnCount = showTimeoutOverlay ? frozenTurnCount : turnCount;
+  const displayTickCount = showTimeoutOverlay ? frozenTickCount : tickCount;
+
   // Moves color (existing behaviour)
   let movesColor = '#F4E8C1';
   let movesPulse = false;
-  if (turnCount > 460) {
+  if (displayTurnCount > 460) {
     movesColor = '#D95763';
     movesPulse = true;
-  } else if (turnCount > 400) {
+  } else if (displayTurnCount > 400) {
     movesColor = '#F2D06B';
+  }
+
+  // Ticks color: warn as tickCount approaches MAX_TICKS (512)
+  let ticksColor = '#F4E8C1';
+  let ticksPulse = false;
+  if (displayTickCount > 460) {
+    ticksColor = '#D95763';
+    ticksPulse = true;
+  } else if (displayTickCount > 400) {
+    ticksColor = '#F2D06B';
   }
 
   // Cap display at 5:00.00 so it never shows beyond the limit
   const displayElapsed = Math.min(elapsed, TIME_LIMIT_MS);
 
+  // Overlay message differs by cause
+  const timeoutTitle = tickTimedOut ? 'TOO MANY PAUSES!' : "TIME'S UP!";
+  const timeoutSub = tickTimedOut
+    ? `512 tick limit reached — move without long pauses`
+    : 'Puzzle limit: 5 minutes';
+
   return (
     <>
       <style>{`@keyframes hudPulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
 
-      {/* TIME'S UP overlay — covers full game area, blocks all input */}
-      {timedOut && (
+      {/* Timeout overlay — covers full game area, blocks all input */}
+      {showTimeoutOverlay && (
         <div
           style={{
             position: 'absolute',
@@ -93,10 +140,10 @@ export function GameHUD() {
           }}
         >
           <div style={{ fontSize: 56, color: '#D95763', letterSpacing: '3px', lineHeight: 1 }}>
-            TIME&apos;S UP!
+            {timeoutTitle}
           </div>
           <div style={{ marginTop: 10, fontSize: 22, color: '#c8e8f0', letterSpacing: '1px' }}>
-            Puzzle limit: 5 minutes
+            {timeoutSub}
           </div>
           <button
             onClick={handleRetry}
@@ -157,7 +204,8 @@ export function GameHUD() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '4px 14px 6px',
+          padding: '4px 14px 4px',
+          borderBottom: '2px solid rgba(26,26,26,0.3)',
           gap: 16,
         }}>
           <span style={{ fontSize: 20, color: '#c8e8f0', letterSpacing: '1px' }}>MOVES</span>
@@ -168,7 +216,25 @@ export function GameHUD() {
             lineHeight: 1,
             animation: movesPulse ? 'hudPulse 0.6s ease-in-out infinite' : undefined,
           }}>
-            {turnCount}
+            {displayTurnCount}
+          </span>
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '4px 14px 6px',
+          gap: 16,
+        }}>
+          <span style={{ fontSize: 20, color: '#c8e8f0', letterSpacing: '1px' }}>TICKS</span>
+          <span style={{
+            fontSize: 28,
+            color: ticksColor,
+            letterSpacing: '1px',
+            lineHeight: 1,
+            animation: ticksPulse ? 'hudPulse 0.6s ease-in-out infinite' : undefined,
+          }}>
+            {displayTickCount > 400 ? `${displayTickCount}/${MAX_TICKS}` : displayTickCount}
           </span>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { MOVE_TO_DIRECTION_VECTOR } from './directionMap';
 import { processTurn } from './processTurn';
 import { initGameState } from './initGameState';
 import { advanceBarrels } from './barrels';
+import { MAX_TICKS } from './constants';
 
 export interface ReducerState extends GameState {
   lastDirection: Direction | null;
@@ -29,6 +30,11 @@ export function gameReducer(
       if (state.gameStatus !== 'playing') return state;
 
       const newTickCount = state.tickCount + 1;
+
+      // Hard limit: circuit cannot process more than MAX_TICKS ticks
+      if (newTickCount > MAX_TICKS) {
+        return { ...state, gameStatus: 'timeout' };
+      }
 
       // Step 1: Advance barrels if even tick and not tick 0
       let newBarrels = state.barrels;

@@ -44,7 +44,7 @@ export const DIRECTION_TO_MOVE: Record<Direction, MoveValue> = {
   ArrowRight: 3,
 };
 
-export type GameStatus = 'idle' | 'playing' | 'exploded' | 'won';
+export type GameStatus = 'idle' | 'playing' | 'exploded' | 'won' | 'timeout';
 
 export interface GameState {
   knightA: Position;
