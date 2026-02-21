@@ -7,7 +7,11 @@ export default defineConfig({
   // Load .env files from the parent directory (repo root)
   envDir: '..',
   define: {
-    global: 'globalThis'
+    global: 'globalThis',
+    // Baked in at build time — used to cache-bust prove.worker.js on each deploy.
+    // public/ files bypass Vite's content-hash fingerprinting, so we add ?v=<timestamp>
+    // to the Worker URL manually. Every new build gets a new timestamp → new cache key.
+    __WORKER_VERSION__: JSON.stringify(Date.now().toString()),
   },
   resolve: {
     alias: {

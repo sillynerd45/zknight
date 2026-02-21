@@ -198,7 +198,7 @@ from on-chain puzzle data.
 - [Stellar CLI](https://developers.stellar.org/docs/tools/stellar-cli) ≥ v25 (Protocol 25 / X-Ray required for BN254)
 - [Bun](https://bun.sh/) ≥ 1.x
 - [Node.js](https://nodejs.org/) ≥ 18
-- [circom](https://docs.circom.io/getting-started/installation/) 2.1.x
+- [circom](https://docs.circom.io/getting-started/installation/) 2.2.x
 - snarkjs ≥ 0.7.6
 
 ```bash
@@ -231,7 +231,7 @@ circom zknight.circom --r1cs --wasm --sym --output ./build
 **Trusted setup — only needed after circuit changes:**
 
 ```bash
-# Phase 1: Powers of Tau  (2^19 = 524,288 > ~382K constraints)
+# Phase 1: Powers of Tau  (2^19 = 524,288 > 520,214 constraints — very tight fit; use 2^20 if circuit grows)
 snarkjs powersoftau new bn128 19 pot19_0000.ptau
 snarkjs powersoftau contribute pot19_0000.ptau pot19_final.ptau \
     --name="ZKnight Setup" -e="your entropy here"
@@ -259,9 +259,14 @@ snarkjs groth16 verify vk.json public.json proof.json
 **Copy prover assets into the frontend:**
 
 ```bash
-cp zk/build/zknight_js/zknight.wasm zknight-frontend/public/
-cp zk/zknight_final.zkey zknight-frontend/public/
+# Only the WASM goes into public/ — the zkey is served from the CDN (see prove.worker.js ZKEY_PATH)
+cp zk/build/zknight_js/zknight.wasm zknight-frontend/public/zk/
 ```
+
+> The `zknight_final.zkey` (~222 MB) is **not** committed or copied to `public/`.
+> It is hosted on a CDN and fetched by the Web Worker at proof time.
+> To change the CDN URL, update `ZKEY_PATH` in `public/prove.worker.js` and `ZKEY_URL` in
+> `OnChainGameContext.tsx`, or set `window.__ZKEY_URL__` in `public/game-studio-config.js`.
 
 ### 3. Build & Deploy the Soroban Contract
 
