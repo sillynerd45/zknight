@@ -22,25 +22,32 @@ const ZKEY_URL = (window as any).__ZKEY_URL__ as string | undefined
     ?? 'https://zknight-assets.wazowsky.id/zknight_final.zkey';
 const WASM_URL = '/zk/zknight.wasm';
 
+// Must match the ZKEY_CACHE_NAME constant in public/prove.worker.js
+const ZKEY_CACHE_NAME = 'zknight-zkey-v1';
+
 /**
- * Fire-and-forget prefetch of ZK proving assets into the browser HTTP cache.
+ * Fire-and-forget prefetch of ZK proving assets.
  *
- * Called as soon as the game starts (initGame). The player has ~5 minutes to
- * solve the puzzle, so the 222 MB zkey finishes downloading long before
- * snarkjs.groth16.fullProve() needs it. When the worker later fetch()es the
- * same URLs it gets an instant cache hit instead of a cold download.
- *
- * Rules:
- * - mode:'cors' on the zkey so it is stored as a CORS-valid cache entry;
- *   an opaque entry would not be reused by the worker's cross-origin fetch.
+ * - zkey is stored in the Cache API under ZKEY_CACHE_NAME so the worker gets
+ *   an instant hit when it calls fetchZkeyBytes(). Without this the worker
+ *   would miss the Cache API on its first run and re-download the full file.
+ *   Skipped if a cached entry already exists.
+ * - WASM is a small same-origin asset served by the CDN with long-lived cache
+ *   headers; a plain fetch() with body consumption warms the HTTP cache that
+ *   snarkjs uses internally when it fetches WASM_PATH inside the worker.
  * - Errors are swallowed — prefetch is best-effort. A failed prefetch just
- *   means the worker falls back to downloading at proof time as before.
+ *   means the worker falls back to downloading at proof time.
  */
 function prefetchZkAssets() {
-    fetch(ZKEY_URL, {mode: 'cors'}).catch(() => { /* best-effort */
-    });
-    fetch(WASM_URL).catch(() => { /* best-effort */
-    });
+    // Warm Cache API for the zkey (matches what prove.worker.js reads from)
+    caches.open(ZKEY_CACHE_NAME).then(async (cache) => {
+        if (await cache.match(ZKEY_URL)) return; // already cached, nothing to do
+        const res = await fetch(ZKEY_URL, {mode: 'cors'});
+        if (res.ok) await cache.put(ZKEY_URL, res);
+    }).catch(() => { /* best-effort */ });
+
+    // Warm HTTP cache for the WASM (snarkjs fetches it by URL inside the worker)
+    fetch(WASM_URL).then(res => res.arrayBuffer()).catch(() => { /* best-effort */ });
 }
 
 // ============================================================================
