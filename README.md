@@ -45,6 +45,7 @@ time — but in **strictly opposite directions** on both axes.
 - Knight A and Knight B collide
 - Either knight steps onto a Static TNT barrel
 - Either knight steps onto a Moving TNT barrel (or a barrel moves into a knight)
+- 5 minutes of real time elapse, or 512 ticks are used up
 
 ### Game Elements
 
@@ -264,9 +265,12 @@ cp zk/build/zknight_js/zknight.wasm zknight-frontend/public/zk/
 ```
 
 > The `zknight_final.zkey` (~222 MB) is **not** committed or copied to `public/`.
-> It is hosted on a CDN and fetched by the Web Worker at proof time.
-> To change the CDN URL, update `ZKEY_PATH` in `public/prove.worker.js` and `ZKEY_URL` in
-> `OnChainGameContext.tsx`, or set `window.__ZKEY_URL__` in `public/game-studio-config.js`.
+> It is served from a CDN and stored in the
+> browser's **Cache API** (`zknight-zkey-v1`) on first load — subsequent visits serve it instantly
+> without re-downloading.
+> To override the CDN URL, set `window.__ZKEY_URL__` in `public/game-studio-config.js`.
+> The worker is cache-busted on every build via a `?v=<timestamp>` query string injected by
+> `vite.config.ts`, ensuring browsers always pick up the latest worker after a deploy.
 
 ### 3. Build & Deploy the Soroban Contract
 
