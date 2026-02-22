@@ -8,6 +8,7 @@ interface OpenGamesListProps {
   games: Game[];
   loading: boolean;
   currentPlayer: string | null;
+  activeGameId: number | null;
   service: ZknightService;
   wallet: {
     publicKey: string | null;
@@ -15,6 +16,7 @@ interface OpenGamesListProps {
     getContractSigner: () => any;
   };
   onJoinSuccess: (gameId: number) => void;
+  onActiveGameConflict: () => void;
   onError: (message: string) => void;
 }
 
@@ -22,9 +24,11 @@ export function OpenGamesList({
   games,
   loading,
   currentPlayer,
+  activeGameId,
   service,
   wallet,
   onJoinSuccess,
+  onActiveGameConflict,
   onError,
 }: OpenGamesListProps) {
   const [joiningGameId, setJoiningGameId] = useState<number | null>(null);
@@ -42,6 +46,11 @@ export function OpenGamesList({
   const handleJoinGame = useCallback(async (gameId: number) => {
     if (!wallet.isConnected || !wallet.publicKey) {
       onError('Please connect your wallet first');
+      return;
+    }
+
+    if (activeGameId !== null) {
+      onActiveGameConflict();
       return;
     }
 
@@ -66,17 +75,17 @@ export function OpenGamesList({
       console.error('[OpenGamesList] Error joining game:', err);
 
       // Handle specific errors
-      if (err.message?.includes('GameExpired')) {
+      if (err.message?.includes('AlreadyHasActiveGame') || err.message?.includes('#6')) {
+        onActiveGameConflict();
+      } else if (err.message?.includes('GameExpired')) {
         onError('This game has expired (>1 hour old)');
-      } else if (err.message?.includes('AlreadyHasActiveGame')) {
-        onError('You already have an active game. Finish it first.');
       } else {
         onError(err.message || 'Failed to join game');
       }
     } finally {
       setJoiningGameId(null);
     }
-  }, [wallet, service, onJoinSuccess, onError]);
+  }, [wallet, activeGameId, service, onJoinSuccess, onActiveGameConflict, onError]);
 
   return (
     <div className={styles.panel}>
@@ -133,7 +142,7 @@ export function OpenGamesList({
                 <button
                   className={styles.btnPrimary}
                   onClick={() => handleJoinGame(game.id)}
-                  disabled={gameExpired || isOwnGame || !wallet.isConnected || joiningGameId !== null}
+                  disabled={gameExpired || isOwnGame || !wallet.isConnected || joiningGameId !== null || (activeGameId !== null && !isOwnGame)}
                 >
                   {joiningGameId === game.id
                     ? 'JOINING...'

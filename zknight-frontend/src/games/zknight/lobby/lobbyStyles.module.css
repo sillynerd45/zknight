@@ -930,6 +930,52 @@
     border-top: 2px solid #d5c9a8;
 }
 
+/* --- Active Game Conflict Dialog --- */
+.dialogOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.dialogCard {
+    background: #F4E8C1;
+    border: 4px solid #1a1a1a;
+    box-shadow: 8px 8px 0px 0px #1a1a1a;
+    padding: 2rem 2.5rem;
+    max-width: 480px;
+    width: 90%;
+    animation: slideIn 0.2s ease-out;
+}
+
+.dialogTitle {
+    margin: 0 0 1rem 0;
+    font-size: 2rem;
+    font-family: 'VT323', monospace;
+    color: #1a1a1a;
+    letter-spacing: 2px;
+    border-bottom: 3px solid #1a1a1a;
+    padding-bottom: 0.5rem;
+}
+
+.dialogBody {
+    margin: 0 0 1.75rem 0;
+    font-size: 1.3rem;
+    color: #333;
+    line-height: 1.5;
+}
+
+.dialogActions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 /* --- Footer --- */
 .footer {
     position: fixed;

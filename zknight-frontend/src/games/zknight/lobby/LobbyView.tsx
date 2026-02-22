@@ -25,6 +25,7 @@ export function LobbyView({onGameStart, onOpenEditor}: LobbyViewProps) {
     const [error, setError] = useState<string | null>(null);
     const [isReconnecting, setIsReconnecting] = useState(false);
     const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
+    const [showActiveGameConflict, setShowActiveGameConflict] = useState(false);
 
     // Poll open games every 10 seconds with exponential backoff on failure
     useEffect(() => {
@@ -136,6 +137,10 @@ export function LobbyView({onGameStart, onOpenEditor}: LobbyViewProps) {
         setError(null);
     }, []);
 
+    const handleActiveGameConflict = useCallback(() => {
+        setShowActiveGameConflict(true);
+    }, []);
+
     return (
         <div className={styles.page}>
             {/* Header Bar */}
@@ -244,13 +249,36 @@ export function LobbyView({onGameStart, onOpenEditor}: LobbyViewProps) {
                         games={openGames}
                         loading={loadingGames}
                         currentPlayer={wallet.publicKey}
+                        activeGameId={activeGameId}
                         service={service}
                         wallet={wallet}
                         onJoinSuccess={handleJoinSuccess}
+                        onActiveGameConflict={handleActiveGameConflict}
                         onError={handleError}
                     />
                 </div>
             </div>
+
+            {/* Active Game Conflict Dialog */}
+            {showActiveGameConflict && (
+                <div className={styles.dialogOverlay} onClick={() => setShowActiveGameConflict(false)}>
+                    <div className={styles.dialogCard} onClick={(e) => e.stopPropagation()}>
+                        <h3 className={styles.dialogTitle}>ALREADY IN A LOBBY</h3>
+                        <p className={styles.dialogBody}>
+                            You have an open game{activeGameId !== null ? ` (#${activeGameId})` : ''} waiting for an
+                            opponent. Cancel your game first before joining another.
+                        </p>
+                        <div className={styles.dialogActions}>
+                            <button
+                                className={styles.btnPrimary}
+                                onClick={() => setShowActiveGameConflict(false)}
+                            >
+                                GOT IT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Error Toast */}
             {error && <Toast message={error} onDismiss={clearError}/>}
